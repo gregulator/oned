@@ -5,7 +5,7 @@ library for working with timeseries data, in development by Greg Prisament.
 
 ## Stripe User Guide
 
-Oned contains a "stripe" library in the self-contained header file `oned/stripe.h`.
+Oned contains a "stripe" library in the self-contained header file `oned/stripe.hpp`.
 
 A `oned::Stripe` is similar to a `std::span` with the the addition of a stride
 between elements. This lets us do neat things, like iterate over a particular
@@ -31,7 +31,7 @@ uint8_t FindMinGreenValue() {
 
 ### Installation
 
-The Stripe library is entirely contained in the standalone `oned/stripe.h` header file. Just copy this file to your project to use it.
+The Stripe library is entirely contained in the standalone `oned/stripe.hpp` header file. Just copy this file to your project to use it.
 
 The Stripe library requires C++20 or later.
 
