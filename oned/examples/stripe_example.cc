@@ -31,11 +31,11 @@ uint8_t FindMinGreenValue() {
 }
 
 template <typename T> oned::Stripe<T> EvenElements(std::span<T> span) {
-  return oned::Stripe<T>(span, 2);
+  return oned::Stripe(span, 2);
 }
 
 template <typename T> oned::Stripe<T> OddElements(std::span<T> span) {
-  return oned::Stripe<T>(span, 2);
+  return oned::Stripe(span, 2);
 }
 
 // This example takes a span of integers and displays the elements with even

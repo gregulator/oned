@@ -60,12 +60,12 @@ Example:
 ```
 template <typename T>
 oned::Stripe<T> EvenElements(std::span<T> span) {
-  return oned::Stripe<T>(span, 2);
+  return oned::Stripe(span, 2);
 }
 
 template <typename T>
 oned::Stripe<T> OddElements(std::span<T> span) {
-  return oned::Stripe<T>(span.last(span.size()-1), 2);
+  return oned::Stripe(span.last(span.size()-1, 2);
 }
 ```
 
