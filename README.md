@@ -65,7 +65,7 @@ oned::Stripe<T> EvenElements(std::span<T> span) {
 
 template <typename T>
 oned::Stripe<T> OddElements(std::span<T> span) {
-  return oned::Stripe<T>(span.last(span.size()-1, 2);
+  return oned::Stripe<T>(span.last(span.size()-1), 2);
 }
 ```
 
