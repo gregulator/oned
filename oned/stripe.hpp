@@ -227,6 +227,17 @@ private:
   ssize_t stride_; // number of bytes between subsequent elements
 };
 
+// Reinterpret()
+//
+// Returns a new Stripe that is identical to the original, except for how its
+// values are interpreted.  The returned Stripe has the same data pointer, size
+// and stride as the original Stripe but the values are interpreted as values
+// of type `NewT` instead of type `T`.
+template <typename NewT> Stripe<NewT> Reinterpret(auto stripe) {
+  return Stripe<NewT>(reinterpret_cast<NewT *>(stripe.data()), stripe.size(),
+                      stripe.stride());
+}
+
 } // namespace oned
 
 #endif // __ONED_STRIPE_H__

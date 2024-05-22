@@ -12,10 +12,15 @@ Container views:
 - **chunks.hpp** - Defines `Chunks` which breaks up a large sequence of data in
   to smaller sequential block views.
 
-Codecs:
+Filter Codecs (Non-Compressing):
 
 - **delta.hpp** - Defines functions for delta-encoding and delta-decoding of
   integer sequences.
+- **xor.hpp** - Defines functions for xor-encoding and xor-decoding of integer
+  sequences.
+
+Compression Codecs:
+
 - **runlength.hpp** - Defines functions for runlength-encoding and
   runlength-decoding of byte sequences.
 
@@ -230,6 +235,65 @@ integer types.
 
 See `oned/delta.hpp` for full documentation. See
 `oned/examples/delta_example.cc` for more examples.
+
+## Xor-encoding User Guide
+
+OneD contains a library for xor-encoding sequences of integers in the header
+file `oned/delta.hpp`.
+
+For example, consider the sequence of integers:
+
+```
+ORIGINAL:      0xFF 0xF7 0xF3 0xF1 0xF0
+XOR-ENCODED:   0xFF 0x08 0x04 0x02 0x01
+```
+
+Xor-encoding of timeseries data can turn many of the bits in
+the original sequence to 0. This often works better than delta-encoding for
+floating-point values.
+
+Example:
+```
+  std::vector<int> orig = {0xFF, 0xF7, 0xF3, 0xF1, 0xF0};
+  std::vector<int> encoded;
+  encoded.resize(orig.size());
+  oned::XorEncode(orig.data(), encoded.data(), orig.size());
+  for (int value : encoded) {
+    std::cout << std::hex << value << " ";
+  }
+  std::cout << std::dec << std::endl;
+  // OUTPUT:
+  // 0xFF 0x8 0x4 0x2 0x1
+```
+
+### Installation
+
+The Xor library is contained in the `oned/xor.hpp` header file.  It
+requires the `oned/stripe.hpp` file as well. Just copy these files to your
+project to use them.
+
+The Xor library requires C++20 or later.
+
+### Methods
+The library provides:
+- `XorEncode` and `XorDecode` functions for encoding/decoding sequences
+ of integers.
+- `GenericXorEncode` and `GenericXorDecode` functions for
+ encoding/decoding arbitrary types.
+
+The source and destinations can be specified with flat arrays or Stripes of
+integer types. To use floating-point types, reinterpret them as appropriately-sized integers:
+
+    oned::XorDecode(oned::Reinterpret<uint64_t>(orig_double_stripe),
+                    oned::Reinterpret<uint64_t>(dest_double_stripe));
+
+// Just be aware that platform-specific floating-point representations may
+// affect portability.
+
+### Full documentation
+
+See `oned/xor.hpp` for full documentation. See
+`oned/examples/xor_example.cc` for more examples.
 
 ## Run-length-encoding User Guide
 

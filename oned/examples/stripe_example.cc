@@ -7,6 +7,7 @@
 //
 #include "oned/stripe.hpp"
 
+#include <iomanip>
 #include <iostream>
 #include <vector>
 
@@ -89,6 +90,15 @@ void DefaultConstructedStripeIsEmpty() {
   }
 }
 
+void ReinterpretExample() {
+  std::vector<double> values = {1.0, 1.1, 1.2};
+  auto stripe = oned::Stripe<double>(std::span<double>(values));
+  for (uint64_t x : oned::Reinterpret<uint64_t>(stripe)) {
+    std::cout << std::hex << std::setw(16) << std::setfill('0') << x << " ";
+  }
+  std::cout << std::endl;
+}
+
 int main() {
   std::cout << "Minimum green value is: 0x" << std::hex
             << (int)FindMinGreenValue() << std::dec << std::endl;
@@ -98,4 +108,6 @@ int main() {
   ReverseStripeExample();
 
   DefaultConstructedStripeIsEmpty();
+
+  ReinterpretExample();
 }
