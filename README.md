@@ -1,6 +1,6 @@
-# Oned - Timeseries Utilities
+# OneD - Timeseries Utilities
 
-Oned (pronounced "1-D" as in "one-dimensional") is a work-in-progress C++
+OneD (pronounced "1-D" as in "one-dimensional") is a work-in-progress C++
 library for working with timeseries data, in development by Greg Prisament.
 
 The library currently provides:
@@ -14,7 +14,7 @@ The library currently provides:
 
 ## Stripe User Guide
 
-Oned contains a "stripe" library in the self-contained header file `oned/stripe.hpp`.
+OneD contains a "stripe" library in the self-contained header file `oned/stripe.hpp`.
 
 A `oned::Stripe` is similar to a `std::span` with the the addition of a stride
 between elements. This lets us do neat things, like iterate over a particular
@@ -93,7 +93,7 @@ progress downward through memory.
 
 ## Delta-encoding User Guide
 
-Oned contains a library for delta-encoding sequences of integers in the header
+OneD contains a library for delta-encoding sequences of integers in the header
 file `oned/delta.hpp`.
 
 For example, consider the sequence of integers:
@@ -147,7 +147,7 @@ See `oned/delta.hpp` for full documentation. See
 
 ## Run-length-encoding User Guide
 
-Oned contains a library for runlength-encoding of byte sequences in the header
+OneD contains a library for runlength-encoding of byte sequences in the header
 file `oned/runlength.hpp`.
 
 For example, consider the sequence of bytes:
