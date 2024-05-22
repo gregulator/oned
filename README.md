@@ -9,6 +9,8 @@ The library currently provides:
   useful for extracting integer sequence views from various memory layouts.
 - **delta.hpp** - Defines functions for delta-encoding and delta-decoding of
   integer sequences.
+- **runlength.hpp** - Defines functions for runlength-encoding and
+  runlength-decoding of byte sequences.
 
 ## Stripe User Guide
 
@@ -89,7 +91,7 @@ For example, if a stride of 0 is used, then the stripe behaves as if it has
 A `oned::Stripe<int32_t>` with stride of `-4` will start at `&data` and
 progress downward through memory.
 
-## Delta-Encoding User Guide
+## Delta-encoding User Guide
 
 Oned contains a library for delta-encoding sequences of integers in the header
 file `oned/delta.hpp`.
@@ -122,8 +124,8 @@ std::cout << endl;
 
 ### Installation
 
-The Delta library is contained in the standalone `oned/delta.hpp` header file.
-It requires the `oned/stripe.hpp` file as well. Just copy these files to your
+The Delta library is contained in the `oned/delta.hpp` header file.  It
+requires the `oned/stripe.hpp` file as well. Just copy these files to your
 project to use them.
 
 The Delta library requires C++20 or later.
@@ -142,3 +144,63 @@ integer types.
 
 See `oned/delta.hpp` for full documentation. See
 `oned/examples/delta_example.cc` for more examples.
+
+## Run-length-encoding User Guide
+
+Oned contains a library for runlength-encoding of byte sequences in the header
+file `oned/runlength.hpp`.
+
+For example, consider the sequence of bytes:
+
+```
+ORIGINAL:           'A' 'A' 'A' 'A' 'B' 'B' 'B'
+RUN-LENGTH-ENCODED:  4  'A'  3  'B'
+```
+
+Runlength-encoding is effective at compressing sequences that contain runs of
+identical bytes. For example, it compresses 64-bit signed integers containing
+values in the range (-256, 255) from 8 bytes down to 4 bytes. This makes it
+well-suited for data that has been delta-encoded. However, data without
+repetition is expanded to 2X the size, so it is not a good choice in that case.
+
+Example:
+```
+std::vector<uint8_t> orig({'A', 'A', 'A', 'A', 'B', 'B', 'B'});
+std::vector<uint8_t> encoded;
+size(oned::ComputeRunlengthEncodeSize(orig.data(), orig.size()));
+oned::RunlengthStatus status = oned::RunlengthEncode(orig.data(),
+    orig.size(), encoded.data(), encoded.size());
+if (status != oned::RunlengthStatus::kOk) {
+  std::cout << "error code " << (int)status << std::endl;
+} else {
+  for (int i = 0; i < encoded.size(); i+=2) {
+    std::cout << (int)encoded[i] << " '" << encoded[i+1] << "' ";
+  }
+  std::cout << std::endl;
+  // OUTPUT:
+  // 4 'A' 3 'B'
+}
+```
+
+### Installation
+
+The Runlength library is fully contained in standalone `oned/runlength.hpp`
+header file. Just copy this file to your project to use it.
+
+The Runlength library requires C++11 or later.
+
+### Methods
+The library provides:
+- `ComputeRunlengthEncodeSize` and `ComputeRunlengthDecodeSize` functions
+   for determining the size (in bytes) of the output buffer, prior to encoding
+   or decoding.
+- `RunlengthEncode` and `RunlengthDecode` functions for encoding/decoding
+   byte sequences.
+
+At this time only contiguous byte sequences are supported, but in the future we
+may support other word sizes and input/output types.
+
+### Full documentation
+
+See `oned/runlength.hpp` for full documentation. See
+`oned/examples/runlength_example.cc` for more examples.
