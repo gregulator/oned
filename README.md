@@ -5,8 +5,15 @@ library for working with timeseries data, in development by Greg Prisament.
 
 The library currently provides:
 
+Container views:
+
 - **stripe.hpp** - Defines `Stripe` which is like a `std::span` with a stride;
   useful for extracting integer sequence views from various memory layouts.
+- **chunks.hpp** - Defines `Chunks` which breaks up a large sequence of data in
+  to smaller sequential block views.
+
+Codecs:
+
 - **delta.hpp** - Defines functions for delta-encoding and delta-decoding of
   integer sequences.
 - **runlength.hpp** - Defines functions for runlength-encoding and
@@ -90,6 +97,85 @@ For example, if a stride of 0 is used, then the stripe behaves as if it has
 
 A `oned::Stripe<int32_t>` with stride of `-4` will start at `&data` and
 progress downward through memory.
+
+## Chunk User Guide
+
+OneD contains a "chunks" library in the header file `oned/chunks.hpp`.
+
+The `Chunks` class  conceptually breaks up a large sequence of data into
+smaller sequential blocks, called "chunks". Each chunk is a view represented as
+a `oned::Stripe<T>`. The underlying data may be a contiguous array or a Stripe.
+Each chunk in a Chunks object is the same size, except for the last one, which
+may be smaller than the others.
+
+Example:
+```
+
+    std::vector<int> v = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    for (oned::Stripe<int> chunk : oned::Chunks(v, 3)) {
+      std::cout << "Chunk: ";
+      for (int x : chunk) {
+        std::cout << x << " ";
+      }
+      std::cout << std::endl;
+    }
+    // OUTPUT:
+    // Chunk: 0 1 2
+    // Chunk: 3 4 5
+    // Chunk: 6 7 8
+    // Chunk: 9
+```
+
+### Installation
+The Chunks library is contained in the `oned/chunks.hpp` header file.  It
+requires the `oned/stripe.hpp` file as well. Just copy these files to your
+project to use them.
+
+The Chunks library requires C++20 or later.
+
+### Creating a Chunks
+
+A `oned::Chunks` is a "view" container. It does not own the underlying data. It
+is the user's responsibility to ensure that all data access via Chunks is
+valid.
+
+A `oned::Chunks<T>` can be constructed from a `std::vector<T>`, `std::span<T>` or `oned::Stripe<T>`:
+
+```
+  // Construct Chunks from a vector and chunk size.
+  Chunks(std::vector<T>& data, size_t chunk_size);
+
+  // Construct Chunks from a span and chunk size.
+  Chunks(std::span<T> data, size_t chunk_size);
+
+  // Construct Chunks from a Stripe and chunk size.
+  Chunks(Stripe<T> data, size_t chunk_size);
+```
+
+### Accessing Individual Chunks
+
+Each individual chunk are represented as `oned::Stripe<T>`, which is a view into the underlying data.
+
+Individual chunks can be accessed with array-like indexing or with iterators.
+
+```
+  std::vector<int> v = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+  Chunks chunks(v, 3);
+
+  // Copy first chunk contents to an array.
+  std::vector<int> first_chunk(chunks[0].begin(), chunks[0].end());
+  // Contains 0, 1, 2
+
+  // Print the first element of each chunk:
+  for (oned::Stripe<int> chunk : chunks) {
+    std::cout << chunk[0] << std::endl;
+  }
+  // OUTPUT:
+  // 0
+  // 3
+  // 6
+  // 9
+```
 
 ## Delta-encoding User Guide
 

@@ -215,7 +215,8 @@ public:
   }
 
   // Obtains a stripe that is a view over the Count elements of this stripe
-  // starting at offset Offset. The stride remains unchanged.
+  // starting at offset Offset. The stride remains unchanged. The behavior is
+  // undefined if `count + offset > size()`.
   constexpr Stripe<T> substripe(size_t offset, size_t count) const {
     return Stripe<T>(&(*this)[offset], count, stride_);
   }
