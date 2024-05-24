@@ -95,10 +95,12 @@ public:
     using value_type = T;
     using pointer = T *;
     using reference = T &;
+    Iterator() : stripe_(nullptr), index_(0) {}
+
     Iterator(const Stripe *stripe, ssize_t index)
         : stripe_(stripe), index_(index) {}
 
-    reference operator*() const { return (*stripe_)[index_]; }
+    reference operator*() { return (*stripe_)[index_]; }
     pointer operator->() { return &(*stripe_)[index_]; }
 
     // Prefix increment
@@ -144,12 +146,12 @@ public:
 
   // Returns an iterator pointing to the first element of this span, or `end()`
   // if the span is empty.
-  constexpr iterator begin() const noexcept { return Iterator(this, 0); }
+  constexpr iterator begin() noexcept { return Iterator(this, 0); }
 
   // Returns an iterator to the element following the last element of the
   // stripe. This element acts as a placeholder; attempting to access it results
   // in undefined behavior.
-  constexpr iterator end() const noexcept { return Iterator(this, size_); }
+  constexpr iterator end() noexcept { return Iterator(this, size_); }
 
   // Returns a reverse iterator pointing to the last element at the end of this
   // span, or `rend()` if the span is empty.
@@ -237,6 +239,8 @@ template <typename NewT> Stripe<NewT> Reinterpret(auto stripe) {
   return Stripe<NewT>(reinterpret_cast<NewT *>(stripe.data()), stripe.size(),
                       stripe.stride());
 }
+
+static_assert(std::input_or_output_iterator<Stripe<int>::iterator>);
 
 } // namespace oned
 

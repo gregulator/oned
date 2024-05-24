@@ -3,7 +3,7 @@
 #ifndef __ONED_DELTA_H__
 #define __ONED_DELTA_H__
 
-#include "oned/stripe.hpp"
+#include <ranges>
 
 // This file defines functions for delta-encoding of integer sequences (and
 // decoding):
@@ -44,12 +44,8 @@
 //    // OUTPUT:
 //    // 2 5 4 10 9
 //
-// The source and destinations can be specified with flat arrays or Stripes of
-// integer types.
-//
-// To use a std::span, first convert it to a Stripe:
-//
-//    DeltaEncode(Stripe(source_span), Stripe(dest_span));
+// The source and destinations can be specified with flat arrays or sized
+// ranges of integer types.
 //
 // Arbitrary data types can be encoded using GenericDeltaDecode:
 //
@@ -84,50 +80,18 @@ void GenericDeltaEncode(SourceT source, DestT dest, size_t num_elements) {
   }
 }
 
-// Delta encode a sequence of integers from a flat array to flat array. `source`
-// and `dest` may be equal, in which case the encoded will be in-place.
-// Problems will arise if `source[i]` overlaps in memory with `dest[j]` for `i
+// Delta encode a sequence of integers. Values are read from range `Source` and
+// written to range `Dest`. The minimum of `source.size()` and `dest.size()` is
+// used as the number of elements. `source` and `dest` may overlap, but
+// problems will arise if `source[i]` overlaps in memory with `dest[j]` for `i
 // > j`.
-template <typename T>
-void DeltaEncode(T *source, T *dest, size_t num_elements) {
-  static_assert(std::is_integral<T>::value,
-                "The type T must be an integral type. Use GenericDeltaEncode "
-                "for arbitrary types");
-  GenericDeltaEncode<T *, T *>(source, dest, num_elements);
-}
-
-// Delta encode a sequence of integers from a stripe to a flat array. The
-// `source.size()` is used as the number of elements.  `source` and `dest` may
-// overlap, but problems will arise if `source[i]` overlaps in memory with
-// `dest[j]` for `i > j`.
-template <typename T> void DeltaEncode(Stripe<T> source, T *dest) {
-  static_assert(std::is_integral<T>::value,
-                "The type T must be an integral type. Use GenericDeltaEncode "
-                "for arbitrary types");
-  GenericDeltaEncode<Stripe<T>, T *>(source, dest, source.size());
-}
-
-// Delta encode a sequence of integers from a flat array to a stripe. The
-// `dest.size()` is used as the number of elements.  `source` and `dest` may
-// overlap, but problems will arise if `source[i]` overlaps in memory with
-// `dest[j]` for `i > j`.
-template <typename T> void DeltaEncode(T *source, Stripe<T> dest) {
-  static_assert(std::is_integral<T>::value,
-                "The type T must be an integral type. Use GenericDeltaEncode "
-                "for arbitrary types");
-  GenericDeltaEncode<T *, Stripe<T>>(source, dest, dest.size());
-}
-
-// Delta encode a sequence of integers from a stripe to a stripe. The minimum of
-// `source.size()` and `dest.size()` is used as the number of elements.
-// `source` and `dest` may overlap, but problems will arise if `source[i]`
-// overlaps in memory with `dest[j]` for `i > j`.
-template <typename T> void DeltaEncode(Stripe<T> source, Stripe<T> dest) {
-  static_assert(std::is_integral<T>::value,
-                "The type T must be an integral type. Use GenericDeltaEncode "
-                "for arbitrary types");
-  GenericDeltaEncode<Stripe<T>, Stripe<T>>(
-      source, dest, std::min(source.size(), dest.size()));
+template <std::ranges::sized_range SourceR, std::ranges::sized_range DestR>
+  requires std::is_integral_v<std::ranges::range_value_t<SourceR>> &&
+           std::is_same_v<std::ranges::range_value_t<SourceR>,
+                          std::ranges::range_value_t<DestR>>
+void DeltaEncode(SourceR &&source, DestR &&dest) {
+  GenericDeltaEncode<SourceR, DestR>(source, dest,
+                                     std::min(source.size(), dest.size()));
 }
 
 // Decodes a delta-encoded `source` and writes the result to `dest`. `source`
@@ -148,50 +112,18 @@ void GenericDeltaDecode(SourceT source, DestT dest, size_t num_elements) {
   }
 }
 
-// Decodes a sequence of delta-encoded integers from a flat array to flat array.
-// `source` and `dest` may be equal, in which case the encoded will be
-// in-place.  Problems will arise if `source[i]` overlaps in memory with
-// `dest[j]` for `i > j`.
-template <typename T>
-void DeltaDecode(T *source, T *dest, size_t num_elements) {
-  static_assert(std::is_integral<T>::value,
-                "The type T must be an integral type. Use GenericDeltaDecode "
-                "for arbitrary types");
-  GenericDeltaDecode<T *, T *>(source, dest, num_elements);
-}
-
-// Decodes a sequence of delta-encoded integers from a stripe to a flat array.
-// The `source.size()` is used as the number of elements.  `source` and `dest`
-// may overlap, but problems will arise if `source[i]` overlaps in memory with
-// `dest[j]` for `i > j`.
-template <typename T> void DeltaDecode(Stripe<T> source, T *dest) {
-  static_assert(std::is_integral<T>::value,
-                "The type T must be an integral type. Use GenericDeltaDecode "
-                "for arbitrary types");
-  GenericDeltaDecode<Stripe<T>, T *>(source, dest, source.size());
-}
-
-// Decodes a sequence of delta-encoded integers from a flat array to a stripe.
-// The `dest.size()` is used as the number of elements.  `source` and `dest` may
+// Decodes a sequence of delta-encoded integers. Values are read from range
+// `Source` and written to range `Dest`. The minimum of `source.size()` and
+// `dest.size()` is used as the number of elements.  `source` and `dest` may
 // overlap, but problems will arise if `source[i]` overlaps in memory with
 // `dest[j]` for `i > j`.
-template <typename T> void DeltaDecode(T *source, Stripe<T> dest) {
-  static_assert(std::is_integral<T>::value,
-                "The type T must be an integral type. Use GenericDeltaDecode "
-                "for arbitrary types");
-  GenericDeltaDecode<T *, Stripe<T>>(source, dest, dest.size());
-}
-
-// Decodes a sequence of delta-encoded integers from a stripe to a stripe. The
-// minimum of `source.size()` and `dest.size()` is used as the number of
-// elements.  `source` and `dest` may overlap, but problems will arise if
-// `source[i]` overlaps in memory with `dest[j]` for `i > j`.
-template <typename T> void DeltaDecode(Stripe<T> source, Stripe<T> dest) {
-  static_assert(std::is_integral<T>::value,
-                "The type T must be an integral type. Use GenericDeltaDecode "
-                "for arbitrary types");
-  GenericDeltaDecode<Stripe<T>, Stripe<T>>(
-      source, dest, std::min(source.size(), dest.size()));
+template <std::ranges::sized_range SourceR, std::ranges::sized_range DestR>
+  requires std::is_integral_v<std::ranges::range_value_t<SourceR>> &&
+           std::is_same_v<std::ranges::range_value_t<SourceR>,
+                          std::ranges::range_value_t<DestR>>
+void DeltaDecode(SourceR &&source, DestR &&dest) {
+  GenericDeltaDecode<SourceR, DestR>(source, dest,
+                                     std::min(source.size(), dest.size()));
 }
 
 } // namespace oned

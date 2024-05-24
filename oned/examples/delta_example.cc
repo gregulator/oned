@@ -6,6 +6,7 @@
 //   clang++ -I. --std=c++20 oned/examples/delta_example.cc && ./a.out
 //
 #include "oned/delta.hpp"
+#include "oned/stripe.hpp"
 
 #include <iostream>
 #include <vector>
@@ -14,7 +15,7 @@ void DeltaExampleArrayToArray() {
   std::vector<int> orig = {2, 5, 4, 10, 9};
   std::vector<int> encoded;
   encoded.resize(orig.size());
-  oned::DeltaEncode(orig.data(), encoded.data(), orig.size());
+  oned::DeltaEncode(orig, encoded);
   for (int value : encoded) {
     std::cout << value << " ";
   }
@@ -38,19 +39,19 @@ void DeltaExampleStripeToArray() {
   oned::Stripe<uint8_t> blue_channel(&c[0].b, c.size(), sizeof(RGB));
   std::vector<uint8_t> encoded;
   encoded.resize(red_channel.size());
-  oned::DeltaEncode(red_channel, encoded.data());
+  oned::DeltaEncode(red_channel, encoded);
   std::cout << std::hex << "Red channel: ";
   for (int value : encoded) {
     std::cout << value << " ";
   }
   std::cout << std::endl;
-  oned::DeltaEncode(green_channel, encoded.data());
+  oned::DeltaEncode(green_channel, encoded);
   std::cout << "Green channel: ";
   for (int value : encoded) {
     std::cout << (int)value << " ";
   }
   std::cout << std::endl;
-  oned::DeltaEncode(blue_channel, encoded.data());
+  oned::DeltaEncode(blue_channel, encoded);
   std::cout << "Blue channel: ";
   for (int value : encoded) {
     std::cout << value << " ";
@@ -67,7 +68,7 @@ void DeltaExampleArrayToStripe() {
   std::vector<uint16_t> dest;
   dest.resize(orig.size() * 2);
   oned::Stripe dest_stripe(std::span(dest), 2); // Skip odd indices.
-  oned::DeltaEncode(orig.data(), dest_stripe);
+  oned::DeltaEncode(orig, dest_stripe);
   for (int value : dest) {
     std::cout << value << " ";
   }
@@ -98,10 +99,10 @@ void DeltaExampleRoundTrip() {
   std::vector<int> orig = {2, 5, 4, 10, 9};
   std::vector<int> encoded;
   encoded.resize(orig.size());
-  oned::DeltaEncode(orig.data(), encoded.data(), orig.size());
+  oned::DeltaEncode(orig, encoded);
   std::vector<int> decoded;
   decoded.resize(encoded.size());
-  oned::DeltaDecode(encoded.data(), decoded.data(), encoded.size());
+  oned::DeltaDecode(encoded, decoded);
   for (int value : decoded) {
     std::cout << value << " ";
   }
@@ -112,14 +113,14 @@ void DeltaExampleRoundTrip() {
 
 void DeltaExampleInplace() {
   std::vector<int> orig = {2, 5, 4, 10, 9};
-  oned::DeltaEncode(orig.data(), orig.data(), orig.size());
+  oned::DeltaEncode(orig, orig);
   for (int value : orig) {
     std::cout << value << " ";
   }
   std::cout << std::endl;
   // OUTPUT:
   // 2 3 -1 6 -1
-  oned::DeltaDecode(orig.data(), orig.data(), orig.size());
+  oned::DeltaDecode(orig, orig);
   for (int value : orig) {
     std::cout << value << " ";
   }

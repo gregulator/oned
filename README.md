@@ -52,7 +52,8 @@ uint8_t FindMinGreenValue() {
 
 ### Installation
 
-The Stripe library is entirely contained in the standalone `oned/stripe.hpp` header file. Just copy this file to your project to use it.
+The Stripe library is entirely contained in the standalone `oned/stripe.hpp`
+header file. Just copy this file to your project to use it.
 
 The Stripe library requires C++20 or later.
 
@@ -91,7 +92,9 @@ oned::Stripe<T> OddElements(std::span<T> span) {
 ```
 
 ### Non-positive Stride
-A `oned::Stripe` may have a stride that is 0, negative, or less than `sizoef(T)`. In all cases, the element address for index `n` is computed as following:
+A `oned::Stripe` may have a stride that is 0, negative, or less than
+`sizoef(T)`. In all cases, the element address for index `n` is computed as
+following:
 
 ```
   ((uint8_t*)data) + n*stride
@@ -215,21 +218,17 @@ std::cout << endl;
 
 ### Installation
 
-The Delta library is contained in the `oned/delta.hpp` header file.  It
-requires the `oned/stripe.hpp` file as well. Just copy these files to your
-project to use them.
+The Delta library is entirely contained in the standalone `oned/delta.hpp`
+header file. Just copy this file to your project to use it.
 
 The Delta library requires C++20 or later.
 
 ### Methods
 The library provides:
-- `DeltaEncode` and `DeltaDecode` functions for encoding/decoding sequences
- of integers.
+- `DeltaEncode` and `DeltaDecode` functions for encoding/decoding ranges of
+  integers.
 - `GenericDeltaEncode` and `GenericDeltaDecode` functions for
  encoding/decoding arbitrary types.
-
-The source and destinations can be specified with flat arrays or Stripes of
-integer types.
 
 ### Full documentation
 
