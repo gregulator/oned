@@ -4,14 +4,10 @@
 #define __ONED_DELTA_H__
 
 #include <ranges>
+#include <string>
 
-// This file defines functions for delta-encoding of integer sequences (and
-// decoding):
-//
-// - `DeltaEncode` and `DeltaDecode` functions for encoding/decoding sequences
-//   of integers.
-// - `GenericDeltaEncode` and `GenericDeltaDecode` functions for
-//   encoding/decoding arbitrary types.
+// This file defines functions for delta-encoding (and delta-decoding) of
+// integer sequences:
 //
 // For an original sequence of values:
 //
@@ -24,9 +20,8 @@
 // Example:
 //
 //    std::vector<int> orig = {2, 5, 4, 10, 9};
-//    std::vector<int> encoded;
-//    encoded.resize(orig.size());
-//    oned::DeltaEncode(orig.data, encoded.data, orig.size());
+//    std::vector<int> encoded(orig.size());
+//    oned::DeltaEncode(orig, encoded);
 //    for (int value : encoded) {
 //      std::cout << value << " ";
 //    }
@@ -36,7 +31,8 @@
 //
 // Decoding works similarly:
 //
-//    oned::DeltaDecode(encoded.data, decoded.data, encoded.size());
+//    std::vector<int> decoded(encoded.size());
+//    oned::DeltaDecode(encoded, decoded));
 //    for (int value : decoded) {
 //      std::cout << value << " ";
 //    }
@@ -44,87 +40,100 @@
 //    // OUTPUT:
 //    // 2 5 4 10 9
 //
-// The source and destinations can be specified with flat arrays or sized
-// ranges of integer types.
-//
-// Arbitrary data types can be encoded using GenericDeltaDecode:
-//
-//     std::vector<std::complex<double>> values = {...};
-//     // Encode in-place.
-//     oned::GenericDeltaEncode(values.data(), &value.data(), sizeof(values));
-//     // Decode in-place.
-//     oned::GenericDeltaDecode(values.data(), &value.data(), sizeof(values));
-//     // Note that the round trip is lossy in this example due to
-//     // floating-point rounding errors.
-//
 namespace oned {
 
-// Generates a delta encoding of the first `num_elements` of `source` and
-// writes it to `dest`. `source` and `dest` may be equal, in which case the
-// encoding will be in-place. Problems will arise if `source[i]` overlaps in
-// memory with `dest[j]` for `i > j`.  The `-` operation with operands of type
-// `SourceT` must be supported. Both `SourceT` and the type resulting from
-// subtraction must be assignable to `DestT`. Floating-point values may be used
-// but the results will be lossy.
+// concept DeltaEncodable
+//
+// The DeltaEncodable concept specifies the requirements for delta-encoding a
+// and delta-decoding a sequence.
 template <typename SourceT, typename DestT>
-void GenericDeltaEncode(SourceT source, DestT dest, size_t num_elements) {
-  if (num_elements <= 0) {
-    return;
+concept DeltaEncodable =
+    std::ranges::sized_range<SourceT> && std::ranges::sized_range<DestT> &&
+    requires(std::ranges::range_value_t<SourceT> s,
+             std::ranges::range_value_t<DestT> d) {
+      d = s;
+      d = s - d;
+      d = s + d;
+    };
+
+// enum DeltaResult
+//
+// The result of a DeltaEncode or DeltaDecode operation.
+enum class DeltaResult {
+  kOk = 0,           // Success
+  kSizeMismatch = 1, // The source and destination sizes mismatch.
+};
+
+// DeltaEncode()
+//
+// Delta encode a sequence of values. Values are read from range `source` and
+// written to range `dest`. `source` and `dest` must have the same size.
+// `source` and `dest` may overlap, but an incorrect encoding will result if
+// `source[i]` overlaps in memory with `dest[j]` for `i > j`.
+//
+// Returns DeltaResult::kOk on success.
+// Returns DeltaResult::kSizeMismatch if `source` and `dest` differ in size.
+template <typename SourceR, typename DestR>
+  requires DeltaEncodable<SourceR, DestR>
+DeltaResult DeltaEncode(SourceR &&source, DestR &&dest);
+
+// DeltaDecode()
+//
+// Decode a sequence of delta-encoded values. Values are read from range
+// `source` and written to range `dest`. `source` and `dest` must have the same
+// size.  `source` and `dest` may overlap, but an incorrect encoding will
+// result if `source[i]` overlaps in memory with `dest[j]` for `i > j`.
+//
+// Returns DeltaResult::kOk on success.
+// Returns DeltaResult::kSizeMismatch if `source` and `dest` differ in size.
+template <typename SourceR, typename DestR>
+  requires DeltaEncodable<SourceR, DestR>
+DeltaResult DeltaDecode(SourceR &&source, DestR &&dest);
+
+// IMPLEMENTATION BELOW
+
+template <typename SourceR, typename DestR>
+  requires DeltaEncodable<SourceR, DestR>
+DeltaResult DeltaEncode(SourceR &&source, DestR &&dest) {
+  if (std::ranges::size(source) != std::ranges::size(dest)) {
+    return DeltaResult::kSizeMismatch;
   }
-  dest[0] = source[0];
-  auto prev = source[0];
-  for (size_t i = 1; i < num_elements; ++i) {
-    auto old = source[i]; // Needed for in-place encoding.
-    dest[i] = source[i] - prev;
+  auto s = source.begin();
+  auto d = dest.begin();
+  *d = *s;
+  auto prev = *s;
+  do {
+    ++s;
+    ++d;
+    auto old = *s; // Needed for in-place encoding.
+    *d = *s - prev;
     prev = old;
-  }
+  } while (s != source.end());
+  return DeltaResult::kOk;
 }
 
-// Delta encode a sequence of integers. Values are read from range `Source` and
-// written to range `Dest`. The minimum of `source.size()` and `dest.size()` is
-// used as the number of elements. `source` and `dest` may overlap, but
-// problems will arise if `source[i]` overlaps in memory with `dest[j]` for `i
-// > j`.
-template <std::ranges::sized_range SourceR, std::ranges::sized_range DestR>
-  requires std::is_integral_v<std::ranges::range_value_t<SourceR>> &&
-           std::is_same_v<std::ranges::range_value_t<SourceR>,
-                          std::ranges::range_value_t<DestR>>
-void DeltaEncode(SourceR &&source, DestR &&dest) {
-  GenericDeltaEncode<SourceR, DestR>(source, dest,
-                                     std::min(source.size(), dest.size()));
+template <typename SourceR, typename DestR>
+  requires DeltaEncodable<SourceR, DestR>
+DeltaResult DeltaDecode(SourceR &&source, DestR &&dest) {
+  if (std::ranges::size(source) != std::ranges::size(dest)) {
+    return DeltaResult::kSizeMismatch;
+  }
+  auto s = source.begin();
+  auto d = dest.begin();
+  *d = *s;
+  auto prev = *d;
+  do {
+    ++s;
+    ++d;
+    *d = *s + prev;
+    prev = *d;
+  } while (s != source.end());
+  return DeltaResult::kOk;
 }
 
-// Decodes a delta-encoded `source` and writes the result to `dest`. `source`
-// and `dest` may be equal, in which case the decoding will be in-place.
-// Problems will arise if `source[i]` overlaps in memory with `dest[j]` for `i >
-// j`. memory. The `+` operation with operands of type `SourceT` and `DestT`
-// must be supported.  Both `SourceT` and the type resulting from addition must
-// be assignable to `DestT`. Floating-point values may be used but the results
-// will be lossy.
-template <typename SourceT, typename DestT>
-void GenericDeltaDecode(SourceT source, DestT dest, size_t num_elements) {
-  if (num_elements <= 0) {
-    return;
-  }
-  dest[0] = source[0];
-  for (size_t i = 1; i < num_elements; ++i) {
-    dest[i] = source[i] + dest[i - 1];
-  }
-}
-
-// Decodes a sequence of delta-encoded integers. Values are read from range
-// `Source` and written to range `Dest`. The minimum of `source.size()` and
-// `dest.size()` is used as the number of elements.  `source` and `dest` may
-// overlap, but problems will arise if `source[i]` overlaps in memory with
-// `dest[j]` for `i > j`.
-template <std::ranges::sized_range SourceR, std::ranges::sized_range DestR>
-  requires std::is_integral_v<std::ranges::range_value_t<SourceR>> &&
-           std::is_same_v<std::ranges::range_value_t<SourceR>,
-                          std::ranges::range_value_t<DestR>>
-void DeltaDecode(SourceR &&source, DestR &&dest) {
-  GenericDeltaDecode<SourceR, DestR>(source, dest,
-                                     std::min(source.size(), dest.size()));
-}
+static_assert(DeltaEncodable<std::vector<int>, std::vector<double>>);
+static_assert(!DeltaEncodable<std::vector<std::string>, std::vector<double>>);
+static_assert(!DeltaEncodable<int *, std::vector<double>::iterator>);
 
 } // namespace oned
 

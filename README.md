@@ -15,7 +15,7 @@ Container views:
 Filter Codecs (Non-Compressing):
 
 - **delta.hpp** - Defines functions for delta-encoding and delta-decoding of
-  integer sequences.
+  sequences.
 - **xor.hpp** - Defines functions for xor-encoding and xor-decoding of integer
   sequences.
 
@@ -205,9 +205,8 @@ effective.
 Example:
 ```
 std::vector<int> orig = {2, 5, 4, 10, 9};
-std::vector<int> encoded;
-encoded.resize(orig.size());
-oned::DeltaEncode(orig.data, encoded.data, orig.size());
+std::vector<int> encoded(orig.size());
+oned::DeltaEncode(orig, encoded);
 for (int value : encoded) {
   std::cout << value << " ";
 }
@@ -215,6 +214,14 @@ std::cout << endl;
 // OUTPUT:
 // 2 3 -1 6 -1
 ```
+
+The `oned::DeltaEncode` function takes any `std::sized_range`s as input and
+output. The source and destinations must have the same size.
+
+The source and destination may have arbitrary value types, as long as the
+`DeltaEncodable` requirements are met (see delta.hpp for details). For a
+lossless encoding, use the source and destination value types should be the
+same and should both be integers.
 
 ### Installation
 
@@ -224,13 +231,6 @@ header file. Just copy this file to your project to use it.
 The Delta library requires C++20 or later.
 
 ### Methods
-The library provides:
-- `DeltaEncode` and `DeltaDecode` functions for encoding/decoding ranges of
-  integers.
-- `GenericDeltaEncode` and `GenericDeltaDecode` functions for
- encoding/decoding arbitrary types.
-
-### Full documentation
 
 See `oned/delta.hpp` for full documentation. See
 `oned/examples/delta_example.cc` for more examples.

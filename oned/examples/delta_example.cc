@@ -9,13 +9,13 @@
 #include "oned/stripe.hpp"
 
 #include <iostream>
+#include <list>
 #include <vector>
 
 void DeltaExampleArrayToArray() {
-  std::vector<int> orig = {2, 5, 4, 10, 9};
-  std::vector<int> encoded;
-  encoded.resize(orig.size());
-  oned::DeltaEncode(orig, encoded);
+  int orig[] = {2, 5, 4, 10, 9};
+  std::vector<int> encoded(std::size(orig));
+  oned::DeltaEncode(std::span<const int>(orig), encoded);
   for (int value : encoded) {
     std::cout << value << " ";
   }
@@ -37,8 +37,7 @@ void DeltaExampleStripeToArray() {
   oned::Stripe<uint8_t> red_channel(&c[0].r, c.size(), sizeof(RGB));
   oned::Stripe<uint8_t> green_channel(&c[0].g, c.size(), sizeof(RGB));
   oned::Stripe<uint8_t> blue_channel(&c[0].b, c.size(), sizeof(RGB));
-  std::vector<uint8_t> encoded;
-  encoded.resize(red_channel.size());
+  std::vector<uint8_t> encoded(red_channel.size());
   oned::DeltaEncode(red_channel, encoded);
   std::cout << std::hex << "Red channel: ";
   for (int value : encoded) {
