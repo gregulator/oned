@@ -14,15 +14,17 @@ Container views:
 
 Filter Codecs (Non-Compressing):
 
-- **delta.hpp** - Defines functions for delta-encoding and delta-decoding of
+- **delta.hpp** - Defines functions for delta-encoding and decoding of
   sequences.
-- **xor.hpp** - Defines functions for xor-encoding and xor-decoding of integer
+- **xor.hpp** - Defines functions for xor-encoding and decoding of integer
   sequences.
 
 Compression Codecs:
 
 - **runlength.hpp** - Defines functions for runlength-encoding and
-  runlength-decoding of byte sequences.
+  decoding of byte sequences.
+- **simple8b.hpp** - Defines functions for simple8b-encoding and
+  decoding of 64-bit word sequences.
 
 ## Stripe User Guide
 
@@ -353,3 +355,71 @@ may support other word sizes and input/output types.
 
 See `oned/runlength.hpp` for full documentation. See
 `oned/examples/runlength_example.cc` for more examples.
+
+## Simple8b-encoding User Guide
+
+OneD contains a library for simple8b-encoding of 64-bit word sequences in the header
+file `oned/simple8b.hpp`.
+
+The simple8b compresses data by packing multiple integers into a single 64-bit
+word. It is limited to values between 0 and 2^60-1.
+
+```
+ORIGINAL:           0 1 2 3 4 5 6 7 8 9 10 11 12 13 14
+SIMPLE8B-ENCODED:   0x5EDCBA9876543210
+```
+
+Runlength-encoding is effective at compressing sequences that can be
+represented with varying bit widths. It is well-suited for data that has been
+delta-encoded or xor-encoded.
+
+Example:
+```
+{
+  std::vector<uint64_t> v =
+      {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+  std::optional<size_t> encoded_size = 
+      oned::ComputeSimple8bEncodeSize(v.data(), v.size());
+  if (!encoded_size) {
+    std::cout << " Error determining simple8b encoding size" << std::endl;
+    return;
+  }
+  std::vector<uint64_t> encoded(*encoded_size);
+
+  oned::Simple8bStatus result =
+      oned::Simple8bEncode(v.data(), v.size(), encoded.data(), encoded.size());
+  if (result != oned::Simple8bStatus::kOk) {
+    std::cout << "Error encoding with simple8b" << std::endl;
+    return;
+  }
+
+  for (uint64_t v : out) {
+    std::cout << std::hex << v << std::endl; 
+  }
+  // OUTPUT:
+  // 0x5EDCBA9876543210
+}
+```
+
+### Installation
+
+The Simple8b library is fully contained in standalone `oned/simple8b.hpp`
+header file. Just copy this file to your project to use it.
+
+The Simple8b library requires C++20 or later.
+
+### Methods
+The library provides:
+- `ComputeSimple8bEncodeSize` and `ComputeSimple8bDecodeSize` functions for
+  determining the size (in 64-bit words) of the output buffer, prior to
+  encoding or decoding.
+- `Simple8bEncode` and `Simple8bDecode` functions for encoding/decoding
+   byte sequences.
+
+At this time only contiguous sequences of 64-bit are supported, but in the
+future we may support other word sizes and input/output types.
+
+### Full documentation
+
+See `oned/simple8b.hpp` for full documentation. See `oned/examples/simple8b.cc`
+for more examples.
