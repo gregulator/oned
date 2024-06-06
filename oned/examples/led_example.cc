@@ -34,7 +34,7 @@ std::vector<Color> GenPulseData(Color a, Color b, int period_samples,
 
 void LedExample() {
   std::vector<Color> orig =
-      GenPulseData(Color{0x00, 0x80, 0xA0}, Color{0xFF, 0xC0, 0xB0}, 60,
+      GenPulseData(Color{0x00, 0x80, 0xA0}, Color{0xFF, 0xC0, 0x70}, 120,
                    /* a million */ 1000);
   std::cout << "Original size: " << sizeof(Color) * orig.size() << std::endl;
 
@@ -51,9 +51,9 @@ void LedExample() {
   std::cout << std::dec << std::endl;
 
   // Use a oned::Stripe to extract each channel.
-  oned::Stripe<uint8_t> red(&orig[0].r, orig.size(), sizeof(Color));
-  oned::Stripe<uint8_t> green(&orig[0].g, orig.size(), sizeof(Color));
-  oned::Stripe<uint8_t> blue(&orig[0].b, orig.size(), sizeof(Color));
+  oned::Stripe<int8_t> red((int8_t *)&orig[0].r, orig.size(), sizeof(Color));
+  oned::Stripe<int8_t> green((int8_t *)&orig[0].g, orig.size(), sizeof(Color));
+  oned::Stripe<int8_t> blue((int8_t *)&orig[0].b, orig.size(), sizeof(Color));
 
   // Delta-encode each channel in-place.
   DeltaEncode(red, red);
@@ -73,26 +73,23 @@ void LedExample() {
   std::cout << std::endl;
 
   // Simple8b-encode each channel.
-  std::vector<uint64_t> r_copy(red.begin(), red.end());
-  std::vector<uint64_t> g_copy(green.begin(), green.end());
-  std::vector<uint64_t> b_copy(blue.begin(), blue.end());
   std::vector<uint64_t> r_encoded;
   std::vector<uint64_t> g_encoded;
   std::vector<uint64_t> b_encoded;
 
   std::optional<size_t> encoded_size =
-      oned::ComputeSimple8bEncodeSize(r_copy.data(), r_copy.size());
+      oned::ComputeSimple8bEncodeSize(red.data(), red.size());
   if (!encoded_size) {
     std::cout << "problem determining encode size for red channel" << std::endl;
   }
   r_encoded.resize(*encoded_size);
-  encoded_size = oned::ComputeSimple8bEncodeSize(g_copy.data(), g_copy.size());
+  encoded_size = oned::ComputeSimple8bEncodeSize(green.data(), green.size());
   if (!encoded_size) {
     std::cout << "problem determining encode size for green channel"
               << std::endl;
   }
   g_encoded.resize(*encoded_size);
-  encoded_size = oned::ComputeSimple8bEncodeSize(b_copy.data(), b_copy.size());
+  encoded_size = oned::ComputeSimple8bEncodeSize(blue.data(), blue.size());
   if (!encoded_size) {
     std::cout << "problem determining encode size for blue channel"
               << std::endl;
@@ -100,16 +97,16 @@ void LedExample() {
   b_encoded.resize(*encoded_size);
 
   oned::Simple8bStatus result = oned::Simple8bEncode(
-      r_copy.data(), r_copy.size(), r_encoded.data(), r_encoded.size());
+      red.data(), red.size(), r_encoded.data(), r_encoded.size());
   if (result != oned::Simple8bStatus::kOk) {
     std::cout << "problem encoding red channel" << std::endl;
   }
-  result = oned::Simple8bEncode(g_copy.data(), g_copy.size(), g_encoded.data(),
+  result = oned::Simple8bEncode(green.data(), green.size(), g_encoded.data(),
                                 g_encoded.size());
   if (result != oned::Simple8bStatus::kOk) {
     std::cout << "problem encoding green channel" << std::endl;
   }
-  result = oned::Simple8bEncode(b_copy.data(), b_copy.size(), b_encoded.data(),
+  result = oned::Simple8bEncode(blue.data(), blue.size(), b_encoded.data(),
                                 b_encoded.size());
   if (result != oned::Simple8bStatus::kOk) {
     std::cout << "problem encoding blue channel" << std::endl;

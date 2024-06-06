@@ -5,6 +5,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
 #include <optional>
 
 // This file defines functions for Simple8b encoding and decoding of integer
@@ -25,15 +26,16 @@
 // │   Wasted Bits│     60   60   0   0   0   0  12   0  4  4  0  0  0  0  0 0│
 // └──────────────┴───────────────────────────────────────────────────────────┘
 //
-// It is capable of encoding integers with values betweeen 0 and to 2^60 -1, in
-// a single word.
+// It is capable of encoding unsigned integers with values betweeen 0 and (2^60
+// -1), or signed integers between -2^59 and (2^59-1) in a single word.
 //
 // The functions `ComputeSimple8bEncodeSize` and `ComputeSimple8bDecodeSize`
-// functions can be used to determine the size (in 64-bit words) of the output
+// functions can be used to determine the size (in word count) of the output
 // buffer, prior to encoding or decoding.
 //
 // The `Simple8bEncode` and `Simple8bDecode` functions perform the
-// encoding/decoding.
+// encoding/decoding. The input to encode, and the output to decode, may be any
+// integral type.
 
 namespace oned {
 
@@ -45,7 +47,9 @@ enum class Simple8bStatus {
   // Operation failed because the output buffer is too small to hold the
   // results.
   kInsufficientSpace = 1,
-  // Encoding failed because the input contains a value larger than 2^60 - 1.
+  // Encoding failed because the input contains a value outside the min/max
+  // range, which is between 0 and (2^60 -1) for unsigned integers and between
+  // -2^59 and (2^59-1) for signed integers.
   kValueOutOfRange = 2,
 };
 
@@ -54,30 +58,30 @@ enum class Simple8bStatus {
 // Determine the size of the output buffer (number of 64-words) needed to
 // simple8b encode `source`.
 // Returns `std::nullopt` if source contains an out-of-range value.
-[[nodiscard]] static inline std::optional<size_t>
-ComputeSimple8bEncodeSize(uint64_t *source, size_t source_size);
+template <std::integral SourceT>
+std::optional<size_t> ComputeSimple8bEncodeSize(SourceT *source,
+                                                size_t source_size);
 
 // Simple8bEncode
 //
 // Simple8b encodes `source` and writes the result to `dest`. `source_size` is
-// the number of 64-bit words to encode, starting from `source`. `dest_size` is
-// the number of 64-bit words in the output buffer. The behavior is undefined
-// if if `source` and `dest` overlap.
+// the number of integer words to encode, starting from `source`. `dest_size`
+// is the number of 64-bit words in the output buffer. The behavior is
+// undefined if if `source` and `dest` overlap.
 //
 // Returns Simple8bStatus::kOk on success.
 // Returns Simple8bStatus::kInsufficientSpace if `dest_size` is not large
 // enough to the hold the result.
-// Returns Simple8bStatus::kValueOutOfRange if source contains a value larger
-// than 2^60-1.
-[[nodiscard]] static inline Simple8bStatus Simple8bEncode(uint64_t *source,
-                                                          size_t source_size,
-                                                          uint64_t *dest,
-                                                          size_t dest_size);
+// Returns Simple8bStatus::kValueOutOfRange if source contains a value outside
+// the allowed range.
+template <std::integral SourceT>
+[[nodiscard]] Simple8bStatus Simple8bEncode(SourceT *source, size_t source_size,
+                                            uint64_t *dest, size_t dest_size);
 
-// ComputeSimple8bEncodeSize
+// ComputeSimple8bDecodeSize
 //
-// Determine the size of the output buffer (in number of 64-bit words) needed
-// to simple8b decode `source`.
+// Determine the size of the output buffer (in number of words) needed to
+// simple8b decode `source`.
 [[nodiscard]] static inline size_t
 ComputeSimple8bDecodeSize(uint64_t *source, size_t source_size);
 
@@ -85,17 +89,18 @@ ComputeSimple8bDecodeSize(uint64_t *source, size_t source_size);
 //
 // Simple8b decodes `source` and writes the result to `dest`. `source_size` is
 // the number of 64-bit words to decode, starting from `source`. `dest_size` is
-// the number of 64-bit words in the output buffer. The behavior is undefined
-// if `source` and `dest` overlap.
+// the number of integer words in the output buffer. The behavior is undefined
+// if `source` and `dest` overlap. The destination type must be large enough to
+// hold all encoded values, and should match the signedness of the encoded
+// source.
 //
 // Returns Simple8bStatus::kOk on success.
 // Returns Simple8bStatus::kInsufficientSpace if `dest_size` is not large
 // enough to the hold the result.
-// than 2^60-1.
-[[nodiscard]] static inline Simple8bStatus Simple8bDecode(uint64_t *source,
-                                                          size_t source_size,
-                                                          uint64_t *dest,
-                                                          size_t dest_size);
+template <std::integral DestT>
+[[nodiscard]] Simple8bStatus Simple8bDecode(uint64_t *source,
+                                            size_t source_size, DestT *dest,
+                                            size_t dest_size);
 
 // IMPLEMENTATION BELOW
 
@@ -137,8 +142,9 @@ struct EncodeWordsResult {
   uint64_t encoded_value;
 };
 
-static inline EncodeWordsResult
-EncodeWords(uint64_t *source, Simple8bBitPacking packing, size_t max_count) {
+template <std::unsigned_integral SourceT>
+EncodeWordsResult EncodeWords(SourceT *source, Simple8bBitPacking packing,
+                              size_t max_count) {
   uint64_t out = ((uint64_t)packing.selector) << 60;
   size_t i;
   for (i = 0; i < packing.count; i++) {
@@ -150,21 +156,53 @@ EncodeWords(uint64_t *source, Simple8bBitPacking packing, size_t max_count) {
       // Value is too big. Use more bits.
       return EncodeWordsResult{.ok = false};
     }
-    out |= source[i] << (packing.bitwidth * i);
+    out |= ((uint64_t)source[i]) << (packing.bitwidth * i);
   }
   return EncodeWordsResult{
       .ok = true,
-      .next_read = &source[i],
+      .next_read = (uint64_t *)&source[i],
+      .encoded_value = out,
+  };
+}
+
+template <std::signed_integral SourceT>
+EncodeWordsResult EncodeWords(SourceT *source, Simple8bBitPacking packing,
+                              size_t max_count) {
+  uint64_t out = ((uint64_t)packing.selector) << 60;
+  size_t i;
+  for (i = 0; i < packing.count; i++) {
+    if (i >= max_count) {
+      // End reached. Use more bits to avoid padded output.
+      return EncodeWordsResult{.ok = false};
+    }
+    if (packing.bitwidth == 0 && source[i] != 0) {
+      // Special handling for 0 needed in signed case.
+      return EncodeWordsResult{.ok = false};
+    }
+    if (source[i] >= (((int64_t)1) << (packing.bitwidth - 1)) ||
+        source[i] < -((int64_t)1 << (packing.bitwidth - 1))) {
+      // Value is out of range. Use more bits.
+      return EncodeWordsResult{.ok = false};
+    }
+    // Check this?
+    out |= ((uint64_t)((int64_t)source[i]) &
+            (((uint64_t)1 << packing.bitwidth) - 1))
+           << (packing.bitwidth * i);
+  }
+  return EncodeWordsResult{
+      .ok = true,
+      .next_read = (uint64_t *)&source[i],
       .encoded_value = out,
   };
 }
 
 } // namespace simple8b_internal
 
-[[nodiscard]] static inline std::optional<size_t>
-ComputeSimple8bEncodeSize(uint64_t *source, size_t source_size) {
-  uint64_t *read = source;
-  uint64_t *read_end = &source[source_size];
+template <std::integral SourceT>
+[[nodiscard]] std::optional<size_t>
+ComputeSimple8bEncodeSize(SourceT *source, size_t source_size) {
+  SourceT *read = source;
+  SourceT *read_end = &source[source_size];
   size_t dest_size = 0;
   while (read < read_end) {
     // Try possible encodings, starting with most compact.
@@ -178,7 +216,7 @@ ComputeSimple8bEncodeSize(uint64_t *source, size_t source_size) {
         // Try the next packing.
         continue;
       }
-      read = result.next_read;
+      read = (SourceT *)result.next_read;
       dest_size++;
       break;
     }
@@ -190,12 +228,11 @@ ComputeSimple8bEncodeSize(uint64_t *source, size_t source_size) {
   return dest_size;
 }
 
-[[nodiscard]] static inline Simple8bStatus Simple8bEncode(uint64_t *source,
-                                                          size_t source_size,
-                                                          uint64_t *dest,
-                                                          size_t dest_size) {
-  uint64_t *read = source;
-  uint64_t *read_end = &source[source_size];
+template <std::integral SourceT>
+[[nodiscard]] Simple8bStatus Simple8bEncode(SourceT *source, size_t source_size,
+                                            uint64_t *dest, size_t dest_size) {
+  SourceT *read = source;
+  SourceT *read_end = &source[source_size];
   uint64_t *write = dest;
   uint64_t *write_end = &dest[dest_size];
   while (read < read_end) {
@@ -214,7 +251,7 @@ ComputeSimple8bEncodeSize(uint64_t *source, size_t source_size) {
         // Try the next packing.
         continue;
       }
-      read = result.next_read;
+      read = (SourceT *)result.next_read;
       *write = result.encoded_value;
       write++;
       break;
@@ -242,14 +279,14 @@ ComputeSimple8bDecodeSize(uint64_t *source, size_t source_size) {
   return out;
 }
 
-[[nodiscard]] static inline Simple8bStatus Simple8bDecode(uint64_t *source,
-                                                          size_t source_size,
-                                                          uint64_t *dest,
-                                                          size_t dest_size) {
+template <std::unsigned_integral DestT>
+[[nodiscard]] Simple8bStatus Simple8bDecode(uint64_t *source,
+                                            size_t source_size, DestT *dest,
+                                            size_t dest_size) {
   uint64_t *read = source;
   uint64_t *read_end = &source[source_size];
-  uint64_t *write = dest;
-  uint64_t *write_end = &dest[dest_size];
+  DestT *write = dest;
+  DestT *write_end = &dest[dest_size];
   while (read < read_end) {
     uint8_t selector = uint8_t(*read >> 60);
     simple8b_internal::Simple8bBitPacking packing =
@@ -258,8 +295,41 @@ ComputeSimple8bDecodeSize(uint64_t *source, size_t source_size) {
       if (write >= write_end) {
         return Simple8bStatus::kInsufficientSpace;
       }
-      *write = (*read >> (packing.bitwidth * i)) &
-               ((((uint64_t)1) << packing.bitwidth) - 1);
+      *write = (DestT)((*read >> (packing.bitwidth * i)) &
+                       ((((uint64_t)1) << packing.bitwidth) - 1));
+      write++;
+    }
+    read++;
+  }
+  return Simple8bStatus::kOk;
+}
+
+template <std::signed_integral DestT>
+[[nodiscard]] Simple8bStatus Simple8bDecode(uint64_t *source,
+                                            size_t source_size, DestT *dest,
+                                            size_t dest_size) {
+  uint64_t *read = source;
+  uint64_t *read_end = &source[source_size];
+  DestT *write = dest;
+  DestT *write_end = &dest[dest_size];
+  while (read < read_end) {
+    uint8_t selector = uint8_t(*read >> 60);
+    simple8b_internal::Simple8bBitPacking packing =
+        simple8b_internal::GetBitPacking(selector);
+    for (uint8_t i = 0; i < packing.count; i++) {
+      if (write >= write_end) {
+        return Simple8bStatus::kInsufficientSpace;
+      }
+      if (*read && (*read >> (packing.bitwidth * (i + 1) - 1) & 0x1)) {
+        // negative
+        *write = (DestT)((*read >> (packing.bitwidth * i)) |
+                         (0xFFFFFFFFFFFFFFFF ^
+                          ((((uint64_t)1) << packing.bitwidth) - 1)));
+      } else {
+        // positive
+        *write = (DestT)((*read >> (packing.bitwidth * i)) &
+                         ((((uint64_t)1) << packing.bitwidth) - 1));
+      }
       write++;
     }
     read++;
