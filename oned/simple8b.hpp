@@ -35,6 +35,8 @@
 // The `Simple8bEncode` and `Simple8bDecode` functions perform the
 // encoding/decoding.
 
+namespace oned {
+
 // enum Simple8bStatus
 //
 // Possible return status of simple8b encoding routines.
@@ -264,5 +266,7 @@ ComputeSimple8bDecodeSize(uint64_t *source, size_t source_size) {
   }
   return Simple8bStatus::kOk;
 }
+
+} // namespace oned
 
 #endif // __ONED_SIMPLE8B_HPP__
