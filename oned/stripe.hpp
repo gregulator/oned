@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Greg Prisament
+// Copyright (c) 2024 The OneD Authors
 // See LICENSE file.
 #ifndef __ONED_STRIPE_H__
 #define __ONED_STRIPE_H__

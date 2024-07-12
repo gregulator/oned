@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Greg Prisament
+// Copyright (c) 2024 The OneD Authors
 // See LICENSE file.
 #ifndef __ONED_DATA_CONTAINER_HPP__
 #define __ONED_DATA_CONTAINER_HPP__

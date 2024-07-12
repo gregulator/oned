@@ -1,4 +1,4 @@
-// Copyright (c) 2024 Greg Prisament
+// Copyright (c) 2024 The OneD Authors
 // See LICENSE file.
 //
 // Compile and run from root of git repo with:
