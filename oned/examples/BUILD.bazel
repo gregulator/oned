@@ -1,0 +1,73 @@
+# Copyright (c) 2024 The OneD Authors
+# See LICENSE file.
+
+cc_binary(
+    name = "chunks_example",
+    srcs = ["chunks_example.cc"],
+    copts = ["--std=c++20"],
+    deps = ["//oned:chunks"]
+)
+
+cc_binary(
+    name = "data_container_example",
+    srcs = ["data_container_example.cc"],
+    copts = ["--std=c++20"],
+    deps = ["//oned:data_container"]
+)
+
+cc_binary(
+    name = "delta_example",
+    srcs = ["delta_example.cc"],
+    copts = ["--std=c++20"],
+    deps = [
+        "//oned:delta",
+        "//oned:stripe",
+    ]
+)
+
+cc_binary(
+    name = "led_example",
+    srcs = ["led_example.cc"],
+    copts = ["--std=c++20"],
+    deps = [
+        "//oned:delta",
+        "//oned:simple8b",
+        "//oned:stripe",
+    ]
+)
+
+cc_binary(
+    name = "runlength_example",
+    srcs = ["runlength_example.cc"],
+    copts = ["--std=c++20"],
+    deps = [
+        "//oned:runlength",
+    ]
+)
+
+cc_binary(
+    name = "simple8b_example",
+    srcs = ["simple8b_example.cc"],
+    copts = ["--std=c++20"],
+    deps = [
+        "//oned:simple8b",
+    ]
+)
+
+cc_binary(
+    name = "stripe_example",
+    srcs = ["stripe_example.cc"],
+    copts = ["--std=c++20"],
+    deps = [
+        "//oned:stripe",
+    ]
+)
+
+cc_binary(
+    name = "xor_example",
+    srcs = ["xor_example.cc"],
+    copts = ["--std=c++20"],
+    deps = [
+        "//oned:xor",
+    ]
+)

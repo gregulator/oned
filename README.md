@@ -26,6 +26,24 @@ Compression Codecs:
 - **simple8b.hpp** - Defines functions for simple8b-encoding and
   decoding of 64-bit word sequences.
 
+## Building OneD with Bazel
+
+OneD uses the [bazel](https://bazel.build/) build system. You can build all sources with:
+
+```
+bazel build ...
+```
+
+You can run example programs with, for example:
+
+```
+bazel run oned/examples:xor_example
+```
+
+Many of the OneD headers have minimal dependencies or are fully self-contained.
+So if you are not using the bazel build system, you may be able to get away
+with copying just the headers you need into your project.
+
 ## Stripe User Guide
 
 OneD contains a "stripe" library in the self-contained header file `oned/stripe.hpp`.

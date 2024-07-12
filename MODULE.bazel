@@ -1,0 +1,8 @@
+# Copyright (c) 2024 The OneD Authors
+# See LICENSE file.
+
+module(
+    name = "oned",
+    version = "head",
+    compatibility_level = 1,
+)

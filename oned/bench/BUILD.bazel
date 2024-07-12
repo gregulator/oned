@@ -1,0 +1,9 @@
+# Copyright (c) 2024 The OneD Authors
+# See LICENSE file.
+
+cc_binary(
+    name = "delta_bench",
+    srcs = ["delta_bench.cc"],
+    deps = ["//oned:delta"],
+    copts = ["--std=c++20"],
+)
