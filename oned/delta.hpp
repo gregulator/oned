@@ -5,7 +5,7 @@
 
 #include <ranges>
 #include <string>
-
+#include <vector>
 // This file defines functions for delta-encoding (and delta-decoding) of
 // integer sequences:
 //

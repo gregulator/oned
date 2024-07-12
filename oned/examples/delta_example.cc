@@ -66,7 +66,7 @@ void DeltaExampleArrayToStripe() {
   std::vector<uint16_t> orig = {10, 25, 35, 40, 50, 70};
   std::vector<uint16_t> dest;
   dest.resize(orig.size() * 2);
-  oned::Stripe dest_stripe(std::span(dest), 2); // Skip odd indices.
+  oned::Stripe dest_stripe(std::span<uint16_t>(dest), 2); // Skip odd indices.
   oned::DeltaEncode(orig, dest_stripe);
   for (int value : dest) {
     std::cout << value << " ";

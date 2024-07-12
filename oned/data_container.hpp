@@ -7,7 +7,7 @@
 #include <span>
 #include <string>
 #include <vector>
-
+#include <unordered_map>
 // This library provides a container that holds a collection of heterogenous
 // timeseries data. The `DataContainer` class holds timeseries data that is
 // organized into channels and chunks.

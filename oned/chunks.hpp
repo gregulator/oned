@@ -11,7 +11,7 @@
 #include <span>
 #include <stdexcept>
 #include <string>
-
+#include <vector>
 // This header defines the `Chunks` class which conceptually breaks up a large
 // sequence of data into smaller sequential blocks, called "chunks". Each chunk
 // is a view represented as a `oned::Stripe<T>`. The underlying data may be a
