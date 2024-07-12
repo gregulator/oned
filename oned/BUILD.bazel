@@ -1,0 +1,52 @@
+# Copyright (c) 2024 The OneD Authors
+# See LICENSE file.
+cc_library(
+    name = "chunks",
+    hdrs = ["chunks.hpp"],
+    deps = [":stripe"],
+    copts = ["--std=c++20"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "data_container",
+    hdrs = ["data_container.hpp"],
+    copts = ["--std=c++20"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "delta",
+    hdrs = ["delta.hpp"],
+    copts = ["--std=c++20"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "runlength",
+    hdrs = ["runlength.hpp"],
+    copts = ["--std=c++20"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "simple8b",
+    hdrs = ["simple8b.hpp"],
+    copts = ["--std=c++20"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "stripe",
+    hdrs = ["stripe.hpp"],
+    copts = ["--std=c++20"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "xor",
+    hdrs = ["xor.hpp"],
+    deps = [":stripe"],
+    copts = ["--std=c++20"],
+    visibility = ["//visibility:public"],
+)

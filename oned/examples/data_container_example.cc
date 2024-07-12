@@ -20,8 +20,8 @@ void DataContainerExample() {
       << std::endl;
   DataContainer data;
   DataContainer::Channel *channel = data.AddChannel<RGB>("rgb");
-  DataContainer::Channel *channel2 = data.AddChannel<double>("doubles");
-  DataContainer::Chunk *chunk = data.AddChunk();
+  data.AddChannel<double>("doubles");
+  data.AddChunk();
   *channel->MutableData<RGB>(0) =
       std::vector<RGB>{{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}};
 

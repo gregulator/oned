@@ -130,7 +130,7 @@ public:
     }
 
     friend bool operator==(const Iterator &a, const Iterator &b) {
-      return &a.stripe_[a.index_] == &b.stripe_[b._index_];
+      return &a.stripe_[a.index_] == &b.stripe_[b.index_];
     };
     friend bool operator!=(const Iterator &a, const Iterator &b) {
       return &a.stripe_[a.index_] != &b.stripe_[b.index_];
