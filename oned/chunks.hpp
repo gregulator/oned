@@ -199,9 +199,8 @@ public:
   // Obtains a Chunks that contains `count` chunks from this object, starting
   // at offset `offset`. The chunk size remains unchanged. The behavior is
   // undefined if `count + offset > size()`.
-  constexpr Stripe<T> subchunks(size_t offset, size_t count) const {
-    return Chunks<T>(data_.substripe(offset * chunk_size_, count * chunk_size_,
-                                     chunk_size_));
+  constexpr Chunks<T> subchunks(size_t offset, size_t count) const {
+    return Chunks<T>(data_.substripe(offset * chunk_size_, count * chunk_size_),chunk_size_);
   }
 
 private:

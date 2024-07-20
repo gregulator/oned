@@ -41,7 +41,16 @@ TEST(StripeTestConstructors, SpanConstructor) {
     EXPECT_EQ(stripe.size(), data.size());
     EXPECT_EQ(stripe.stride(), sizeof(int));
 }
+TEST(StripeTestConstructors, SpanAndSkipConstructor) {
+    std::array<int, 5> data = {1, 2, 3, 4, 5};
+    std::span<int> span(data);
+    int skip = 2;
+    oned::Stripe<int> stripe(span,skip);
 
+    EXPECT_EQ(stripe.data(), data.data());
+    EXPECT_EQ(stripe.size(), 3);
+    EXPECT_EQ(stripe.stride(), sizeof(int)*skip);
+}
 
 // Test operator[]
 TEST(StripeTestOperators, SubscriptOperator) {
@@ -97,13 +106,8 @@ TEST(StripeTestIteration, Iterator) {
 // Test reverse iteration
 TEST(StripeTestIteration, ReverseIterator) {
     int data[5] = {1, 2, 3, 4, 5};
-    const oned::Stripe<int> stripe(data, 5, sizeof(int));
-
-    std::vector<int> result;
-    for (auto it = stripe.rbegin(); it != stripe.rend(); ++it) {
-        result.push_back(*it);
-    }
-
+    const oned::Stripe<int> stripe(data, 5, sizeof(int));    
+    std::vector<int> result(stripe.rbegin(), stripe.rend());
     EXPECT_EQ(result, std::vector<int>({5, 4, 3, 2, 1}));
 }
 

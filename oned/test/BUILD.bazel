@@ -6,3 +6,57 @@ cc_test(
   deps = ["//oned:stripe",
   "@googletest//:gtest_main"],
 )
+
+cc_test(
+  name = "chunks_test",
+  size = "small",
+  srcs = ["chunks_test.cc"],
+  copts = ["--std=c++20"],
+  deps = ["//oned:stripe","//oned:chunks",
+  "@googletest//:gtest_main"],
+)
+
+cc_test(
+  name = "data_container_test",
+  size = "small",
+  srcs = ["data_container_test.cc"],
+  copts = ["--std=c++20"],
+  deps = ["//oned:data_container",
+  "@googletest//:gtest_main"],
+)
+
+cc_test(
+  name = "delta_test",
+  size = "small",
+  srcs = ["delta_test.cc"],
+  copts = ["--std=c++20"],
+  deps = ["//oned:delta",
+  "@googletest//:gtest_main"],
+)
+
+cc_test(
+  name = "runlength_test",
+  size = "small",
+  srcs = ["runlength_test.cc"],
+  copts = ["--std=c++20"],
+  deps = ["//oned:runlength",
+  "@googletest//:gtest_main"],
+)
+
+cc_test(
+  name = "simple8b_test",
+  size = "small",
+  srcs = ["simple8b_test.cc"],
+  copts = ["--std=c++20"],
+  deps = ["//oned:simple8b",
+  "@googletest//:gtest_main"],
+)
+
+cc_test(
+  name = "xor_test",
+  size = "small",
+  srcs = ["xor_test.cc"],
+  copts = ["--std=c++20"],
+  deps = ["//oned:xor",
+  "@googletest//:gtest_main"],
+)
