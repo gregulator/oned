@@ -30,7 +30,7 @@ cc_test(
   size = "small",
   srcs = ["delta_test.cc"],
   copts = ["--std=c++20"],
-  deps = ["//oned:delta",
+  deps = ["//oned:delta","//oned:stripe",
   "@googletest//:gtest_main"],
 )
 
