@@ -137,13 +137,22 @@ public:
     return reverse_iterator(begin());
   }
 
-  // Access the first chunk. Calling front on an empty Chunks results in
-  // undefined behavior.
-  constexpr Stripe<T> front() const { return (*this)[0]; }
+  class StripeProxy {
+  public:
+      StripeProxy(const Chunks *chunks, size_t index)
+          : chunks_(chunks), index_(index) {}
 
-  // Access the last chunk. Calling back on an empty Chunks results in
-  // undefined behavior.
-  constexpr Stripe<T> back() const { return (*this)[size() - 1]; }
+      auto begin() const { return (*chunks_)[index_].begin(); }
+      auto end() const { return (*chunks_)[index_].end(); }
+      operator Stripe<T>() const { return (*chunks_)[index_]; }
+  private:
+      const Chunks *chunks_;
+      size_t index_;
+  };
+
+  constexpr StripeProxy front() const { return StripeProxy(this, 0); }
+  constexpr StripeProxy back() const { return StripeProxy(this, size() - 1); }
+
 
   // Returns a view of the chunk with index `pos` with bounds checking. If pos
   // is not within the valid range, an exception std::out_of_range is thrown.

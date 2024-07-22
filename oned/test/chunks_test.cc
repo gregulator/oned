@@ -157,16 +157,16 @@ TEST(ChunksTestMethod, Empty) {
 TEST(ChunksTestMethod, Front) {
     std::vector<int> data = {1, 2, 3, 4, 5};
     Chunks<int> chunks(data, 2);
+    //use of implicit conversion
     const oned::Stripe<int>  str = chunks.front();
-    //ISSUE cannot directly use chunks.front() and chain it with begin()
-    //Can use proxy to hold return value i
-    std::vector<int> front_chunk(str.begin(), str.end());
-    EXPECT_EQ(front_chunk, (std::vector<int>{1, 2}));
+    std::vector<int> front_chunk1(str.begin(), str.end());
+    std::vector<int> front_chunk2(chunks.front().begin(), chunks.front().end());
+    EXPECT_EQ(front_chunk1, (std::vector<int>{1, 2}));
+    EXPECT_EQ(front_chunk2, (std::vector<int>{1, 2}));
 }
 TEST(ChunksTestMethod, Back) {
     std::vector<int> data = {1, 2, 3, 4, 5};
     Chunks<int> chunks(data, 2);
-    const oned::Stripe<int>  str = chunks.back();
-    std::vector<int> back_chunk(str.begin(), str.end());
+    std::vector<int> back_chunk(chunks.back().begin(), chunks.back().end());
     EXPECT_EQ(back_chunk, (std::vector<int>{5}));
 }
