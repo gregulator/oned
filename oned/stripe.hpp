@@ -146,7 +146,6 @@ public:
 
   // Returns an iterator pointing to the first element of this span, or `end()`
   // if the span is empty.
-  //change this to const so we can iterate over const stripe objects
   constexpr iterator begin() const noexcept { return Iterator(this, 0); }
 
   // Returns an iterator to the element following the last element of the
