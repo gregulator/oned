@@ -446,4 +446,4 @@ for more examples.
 
 Install Bazel and upgrade gcc ( 10 or above since you need c++20)
 From root directory run `bazel build ...`.
-for testing run bazel test ...
+For testing, run `bazel test ...`.
