@@ -1,7 +1,7 @@
 #include <benchmark/benchmark.h>
 #include "oned/chunks.hpp"
 #include <vector>
-
+#include <numeric>
 // Function to generate a test sequence
 std::vector<int> GenerateTestSequence(size_t size) {
   std::vector<int> data(size);
