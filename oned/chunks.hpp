@@ -153,6 +153,8 @@ public:
   // Access the first chunk. Calling front on an empty Chunks results in
   // undefined behavior.
   constexpr StripeProxy front() const { return StripeProxy(this, 0); }
+  // Access the last chunk. Calling back on an empty Chunks results in
+  // undefined behavior.
   constexpr StripeProxy back() const { return StripeProxy(this, size() - 1); }
 
 
