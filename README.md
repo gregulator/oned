@@ -445,5 +445,5 @@ for more examples.
 ### Build and Test Instructions
 
 Install Bazel and upgrade gcc ( 10 or above since you need c++20)
-from root directory run bazel build ...
+From root directory run `bazel build ...`.
 for testing run bazel test ...
