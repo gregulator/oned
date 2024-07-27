@@ -5,9 +5,7 @@
 // Function to generate a test sequence
 std::vector<int> GenerateTestSequence(size_t size) {
   std::vector<int> data(size);
-  for (size_t i = 0; i < size; ++i) {
-    data[i] = static_cast<int>(i); // Simple increasing sequence
-  }
+  std::iota(data.begin(), data.end(), 0);  // Simple increasing sequence
   return data;
 }
 
