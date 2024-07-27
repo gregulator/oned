@@ -150,6 +150,8 @@ public:
       size_t index_;
   };
 
+  // Access the first chunk. Calling front on an empty Chunks results in
+  // undefined behavior.
   constexpr StripeProxy front() const { return StripeProxy(this, 0); }
   constexpr StripeProxy back() const { return StripeProxy(this, size() - 1); }
 
