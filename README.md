@@ -447,3 +447,7 @@ for more examples.
 Install Bazel and upgrade gcc ( 10 or above since you need c++20)
 From root directory run `bazel build ...`.
 For testing, run `bazel test ...`.
+
+
+### Benchmarking
+When you build for benchmark make sure use --compilation_mode=opt with bazel build to ensure build in release mode

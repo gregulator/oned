@@ -138,10 +138,9 @@ TEST(StripeTestMethod, First) {
     // that is a view over the first `count` elements of the original stripe.
     int data[5] = {1, 2, 3, 4, 5};
     oned::Stripe<int> stripe(data, 5, sizeof(int));
-    auto firstStripe = stripe.first(3);
 
     std::vector<int> result;
-    for (auto it = firstStripe.begin(); it != firstStripe.end(); ++it) {
+    for (auto it = stripe.first(3).begin(); it != stripe.first(3).end(); ++it) {
         result.push_back(*it);
     }
 
