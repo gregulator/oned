@@ -14,7 +14,7 @@ TEST(ChunksTestConstructor, DefaultConstructor) {
 
 // Test constructor with vector
 TEST(ChunksTestConstructor, VectorConstructor) {
-    std::vector<int> data = {1, 2, 3, 4, 5};
+    std::vector<int> data = {1, 2, 3, 4, 5, 6};
     Chunks<int> chunks(data, 2);
 
     EXPECT_EQ(chunks.size(), 3);
