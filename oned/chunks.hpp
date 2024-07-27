@@ -137,13 +137,26 @@ public:
     return reverse_iterator(begin());
   }
 
+  class StripeProxy {
+  public:
+      StripeProxy(const Chunks *chunks, size_t index)
+          : chunks_(chunks), index_(index) {}
+
+      auto begin() const { return (*chunks_)[index_].begin(); }
+      auto end() const { return (*chunks_)[index_].end(); }
+      operator Stripe<T>() const { return (*chunks_)[index_]; }
+  private:
+      const Chunks *chunks_;
+      size_t index_;
+  };
+
   // Access the first chunk. Calling front on an empty Chunks results in
   // undefined behavior.
-  constexpr Stripe<T> front() const { return (*this)[0]; }
-
+  constexpr StripeProxy front() const { return StripeProxy(this, 0); }
   // Access the last chunk. Calling back on an empty Chunks results in
   // undefined behavior.
-  constexpr Stripe<T> back() const { return (*this)[size() - 1]; }
+  constexpr StripeProxy back() const { return StripeProxy(this, size() - 1); }
+
 
   // Returns a view of the chunk with index `pos` with bounds checking. If pos
   // is not within the valid range, an exception std::out_of_range is thrown.
@@ -199,9 +212,8 @@ public:
   // Obtains a Chunks that contains `count` chunks from this object, starting
   // at offset `offset`. The chunk size remains unchanged. The behavior is
   // undefined if `count + offset > size()`.
-  constexpr Stripe<T> subchunks(size_t offset, size_t count) const {
-    return Chunks<T>(data_.substripe(offset * chunk_size_, count * chunk_size_,
-                                     chunk_size_));
+  constexpr Chunks<T> subchunks(size_t offset, size_t count) const {
+    return Chunks<T>(data_.substripe(offset * chunk_size_, count * chunk_size_),chunk_size_);
   }
 
 private:

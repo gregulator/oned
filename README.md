@@ -441,3 +441,13 @@ future we may support other word sizes and input/output types.
 
 See `oned/simple8b.hpp` for full documentation. See `oned/examples/simple8b.cc`
 for more examples.
+
+### Build and Test Instructions
+
+Install Bazel and upgrade gcc ( 10 or above since you need c++20)
+From root directory run `bazel build ...`.
+For testing, run `bazel test ...`.
+
+
+### Benchmarking
+When you build for benchmark make sure use --compilation_mode=opt with bazel build to ensure build in release mode
