@@ -1,28 +1,43 @@
-// Copyright (c) 2024 The OneD Authors
-// See LICENSE file.
-//
-// Compile and run from root of git repo with:
-//
-//   clang++ -I. -O3 --std=c++20 oned/bench/delta_bench.cc && time ./a.out
-//
+#include <benchmark/benchmark.h>
+#include <vector>
 #include "oned/delta.hpp"
 
-#include <iostream>
-#include <vector>
-#include <list>
-
-#include <time.h>
-
-// CPU time used: 0.000135 (Macbook Pro)
-int main() {
-  std::vector<int32_t> orig;
-  orig.resize(1000000);
-  std::vector<int32_t> encoded;
-  encoded.resize(orig.size());
-  clock_t start, end;
-  start = clock();
-  oned::DeltaEncode(orig, encoded);
-  end = clock();
-  double cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-  std::cout << "CPU time used: " << cpu_time_used << std::endl;
+// Function to generate a test sequence
+std::vector<int> GenerateTestSequence(size_t size) {
+  std::vector<int> data(size);
+  for (size_t i = 0; i < size; ++i) {
+    data[i] = static_cast<int>(i * 2); // Simple increasing sequence
+  }
+  return data;
 }
+
+static void BM_DeltaEncode(benchmark::State &state) {
+  auto size = static_cast<size_t>(state.range(0));
+  auto source = GenerateTestSequence(size);
+  std::vector<int> dest(size);
+
+  for (auto _ : state) {
+    oned::DeltaEncode(source, dest);
+  }
+  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) * size * sizeof(int));
+}
+
+static void BM_DeltaDecode(benchmark::State &state) {
+  auto size = static_cast<size_t>(state.range(0));
+  auto source = GenerateTestSequence(size);
+  std::vector<int> encoded(size);
+  std::vector<int> dest(size);
+
+  oned::DeltaEncode(source, encoded); // Encode first to get a valid encoded sequence
+
+  for (auto _ : state) {
+    oned::DeltaDecode(encoded, dest);
+  }
+  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) * size * sizeof(int));
+}
+
+// Register the functions as benchmarks
+BENCHMARK(BM_DeltaEncode)->Range(8, 8 << 10); // Test with sizes from 8 to 8*1024
+BENCHMARK(BM_DeltaDecode)->Range(8, 8 << 10);
+
+BENCHMARK_MAIN();
