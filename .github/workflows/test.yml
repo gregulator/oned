@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - 'oned/test/**'
+      - 'oned/include/**'
+  pull_request:
+    paths:
+      - 'oned/test/**'
+      - 'oned/include/**'
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Install Bazel
+      run: |
+        sudo apt-get update && sudo apt-get install -y wget g++ zlib1g-dev
+        wget https://github.com/bazelbuild/bazel/releases/download/6.0.0/bazel-6.0.0-linux-x86_64
+        chmod +x bazel-6.0.0-linux-x86_64
+        sudo mv bazel-6.0.0-linux-x86_64 /usr/local/bin/bazel
+        bazel --version
+
+    - name: Build
+      run: |
+        bazel build ...
+
+    - name: Run Tests
+      run: |
+        bazel test ...

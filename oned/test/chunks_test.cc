@@ -64,7 +64,7 @@ TEST(ChunksTestConstructor, StripeConstructor) {
 
 // Test iterators
 TEST(ChunksTestIterators, Iterators) {
-    std::vector<int> data = {1, 2, 3, 4, 5};
+    std::vector<int> data = {1, 2, 3, 4, 5,6};
     Chunks<int> chunks(data, 2);
 
     std::vector<std::vector<int>> expected_chunks = {{1, 2}, {3, 4}, {5}};
