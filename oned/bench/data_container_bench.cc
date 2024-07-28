@@ -1,7 +1,7 @@
 #include <benchmark/benchmark.h>
 #include "oned/data_container.hpp"
 
-// Benchmark adding channels to the DataContainer
+
 static void BM_AddChannel(benchmark::State& state) {
     for (auto _ : state) {
         DataContainer container;

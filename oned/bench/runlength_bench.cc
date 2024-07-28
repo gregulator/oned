@@ -6,7 +6,7 @@
 // Function to generate random byte sequences
 std::vector<uint8_t> GenerateRandomBytes(size_t size) {
     std::vector<uint8_t> data(size);
-    std::mt19937 gen(42); // Fixed seed for reproducibility
+    std::default_random_engine gen;
     std::uniform_int_distribution<> dis(0, 255);
     for (auto& byte : data) {
         byte = static_cast<uint8_t>(dis(gen));
@@ -14,7 +14,7 @@ std::vector<uint8_t> GenerateRandomBytes(size_t size) {
     return data;
 }
 
-// Benchmark for run-length encoding
+// Benchmark for run_length encoding
 static void BM_RunlengthEncode(benchmark::State &state) {
     auto size = static_cast<size_t>(state.range(0));
     auto data = GenerateRandomBytes(size);
@@ -30,7 +30,7 @@ static void BM_RunlengthEncode(benchmark::State &state) {
     state.SetComplexityN(state.range(0));
 }
 
-// Benchmark for run-length decoding
+// Benchmark for run_length decoding
 static void BM_RunlengthDecode(benchmark::State &state) {
     auto size = static_cast<size_t>(state.range(0));
     auto data = GenerateRandomBytes(size);
@@ -53,7 +53,7 @@ static void BM_RunlengthDecode(benchmark::State &state) {
     state.SetComplexityN(state.range(0));
 }
 
-// Register the benchmarks with complexity analysis
+
 BENCHMARK(BM_RunlengthEncode)->RangeMultiplier(2)->Range(64, 128000)->Complexity();
 BENCHMARK(BM_RunlengthDecode)->RangeMultiplier(2)->Range(64, 128000)->Complexity();
 

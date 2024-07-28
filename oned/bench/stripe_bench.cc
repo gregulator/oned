@@ -1,6 +1,6 @@
 #include <benchmark/benchmark.h>
 #include <vector>
-#include <numeric> // For std::iota
+#include <numeric>
 #include "oned/stripe.hpp"
 
 using namespace oned;

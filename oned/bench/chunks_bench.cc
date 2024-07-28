@@ -3,10 +3,10 @@
 #include <vector>
 #include <numeric>
 
-// Function to generate a test sequence
+
 std::vector<int> GenerateTestSequence(size_t size) {
   std::vector<int> data(size);
-  std::iota(data.begin(), data.end(), 0);  // Simple increasing sequence
+  std::iota(data.begin(), data.end(), 0);
   return data;
 }
 

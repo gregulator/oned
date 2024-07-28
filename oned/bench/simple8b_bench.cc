@@ -4,7 +4,7 @@
 #include <random>
 #include <cstdint>
 
-// Utility function to generate random unsigned integers
+
 std::vector<uint64_t> generate_random_unsigned(size_t size, uint64_t max_value) {
     std::vector<uint64_t> data(size);
     std::default_random_engine gen;
@@ -16,7 +16,6 @@ std::vector<uint64_t> generate_random_unsigned(size_t size, uint64_t max_value) 
     return data;
 }
 
-// Utility function to generate random signed integers
 std::vector<int64_t> generate_random_signed(size_t size, int64_t min_value, int64_t max_value) {
     std::vector<int64_t> data(size);
     std::default_random_engine gen;
@@ -78,7 +77,7 @@ static void BM_Simple8bDecodeSigned(benchmark::State& state) {
     state.SetComplexityN(state.range(0));
 }
 
-// Register the benchmarks with a range of sizes
+
 BENCHMARK(BM_Simple8bEncodeUnsigned)->Range(1<<10, 1<<20)->Complexity();
 BENCHMARK(BM_Simple8bDecodeUnsigned)->Range(1<<10, 1<<20)->Complexity();
 BENCHMARK(BM_Simple8bEncodeSigned)->Range(1<<10, 1<<20)->Complexity();
