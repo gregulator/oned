@@ -1,0 +1,239 @@
+Running delta_bench...
+------------------------------------------------------------------------------
+Benchmark                    Time             CPU   Iterations UserCounters...
+------------------------------------------------------------------------------
+BM_DeltaEncode/8          3.62 ns         3.62 ns    194766025 bytes_per_second=8.22921Gi/s
+BM_DeltaEncode/64         30.5 ns         30.5 ns     23193930 bytes_per_second=7.82321Gi/s
+BM_DeltaEncode/512         251 ns          251 ns      2991463 bytes_per_second=7.58932Gi/s
+BM_DeltaEncode/4096       2155 ns         2155 ns       333072 bytes_per_second=7.08224Gi/s
+BM_DeltaEncode/8192       3721 ns         3721 ns       185472 bytes_per_second=8.20153Gi/s
+BM_DeltaDecode/8          2.26 ns         2.26 ns    314924355 bytes_per_second=13.1917Gi/s
+BM_DeltaDecode/64         15.0 ns         15.0 ns     46240484 bytes_per_second=15.9266Gi/s
+BM_DeltaDecode/512         119 ns          119 ns      5847987 bytes_per_second=16.0084Gi/s
+BM_DeltaDecode/4096        986 ns          986 ns       718277 bytes_per_second=15.4807Gi/s
+BM_DeltaDecode/8192       2249 ns         2249 ns       310347 bytes_per_second=13.5674Gi/s
+delta_bench completed. 
+===========================================================================================================================
+Running chunks_bench...
+---------------------------------------------------------------------
+Benchmark                           Time             CPU   Iterations
+---------------------------------------------------------------------
+BM_ConstructChunks/8/2          0.492 ns        0.492 ns   1469644082
+BM_ConstructChunks/64/2         0.510 ns        0.510 ns   1473909486
+BM_ConstructChunks/512/2        0.484 ns        0.484 ns   1457517731
+BM_ConstructChunks/4096/2       0.482 ns        0.482 ns   1435191175
+BM_ConstructChunks/8192/2       0.468 ns        0.468 ns   1481418462
+BM_ConstructChunks/8/8          0.482 ns        0.482 ns   1436666015
+BM_ConstructChunks/64/8         0.493 ns        0.493 ns   1462238118
+BM_ConstructChunks/512/8        0.484 ns        0.484 ns   1434553223
+BM_ConstructChunks/4096/8       0.491 ns        0.491 ns   1454298262
+BM_ConstructChunks/8192/8       0.484 ns        0.484 ns   1504148765
+BM_ConstructChunks/8/64         0.478 ns        0.474 ns   1501059104
+BM_ConstructChunks/64/64        0.477 ns        0.477 ns   1454622228
+BM_ConstructChunks/512/64       0.476 ns        0.476 ns   1461176234
+BM_ConstructChunks/4096/64      0.472 ns        0.472 ns   1461644872
+BM_ConstructChunks/8192/64      0.480 ns        0.480 ns   1413513471
+BM_ConstructChunks_BigO          0.48 (1)        0.48 (1)  
+BM_ConstructChunks_RMS              2 %             2 %    
+BM_IterateChunks/8/2             2.44 ns         2.44 ns    293755883
+BM_IterateChunks/64/2            15.1 ns         15.1 ns     45216279
+BM_IterateChunks/512/2            121 ns          121 ns      5740396
+BM_IterateChunks/4096/2           953 ns          953 ns       746097
+BM_IterateChunks/8192/2          1854 ns         1854 ns       359703
+BM_IterateChunks/8/8             1.56 ns         1.56 ns    445919518
+BM_IterateChunks/64/8            4.23 ns         4.23 ns    164244259
+BM_IterateChunks/512/8           33.6 ns         33.6 ns     20625434
+BM_IterateChunks/4096/8           242 ns          242 ns      2962628
+BM_IterateChunks/8192/8           469 ns          469 ns      1479775
+BM_IterateChunks/8/64            1.60 ns         1.60 ns    440642608
+BM_IterateChunks/64/64           1.57 ns         1.57 ns    443495224
+BM_IterateChunks/512/64          4.27 ns         4.27 ns    162385113
+BM_IterateChunks/4096/64         33.4 ns         33.4 ns     20100964
+BM_IterateChunks/8192/64         62.5 ns         62.5 ns     11241296
+BM_IterateChunks_BigO            0.10 N          0.10 N    
+BM_IterateChunks_RMS              152 %           152 %    
+chunks_bench completed. 
+===========================================================================================================================
+Running data_container_bench...
+-------------------------------------------------------------
+Benchmark                   Time             CPU   Iterations
+-------------------------------------------------------------
+BM_AddChannel/1           105 ns          105 ns      6856520
+BM_AddChannel/2           169 ns          169 ns      3985824
+BM_AddChannel/4           302 ns          302 ns      2370186
+BM_AddChannel/8           618 ns          618 ns      1063536
+BM_AddChannel/16         1514 ns         1514 ns       460217
+BM_AddChannel/32         3196 ns         3196 ns       217571
+BM_AddChannel/64         6812 ns         6811 ns       103707
+BM_AddChannel/128       13895 ns        13895 ns        50051
+BM_AddChannel/256       27833 ns        27833 ns        25053
+BM_AddChannel/512       56267 ns        56267 ns        12519
+BM_AddChannel/1024     113671 ns       113673 ns         6084
+BM_AddChannel_BigO     110.64 N        110.64 N    
+BM_AddChannel_RMS           1 %             1 %    
+BM_AddChunk/1            11.7 ns         11.7 ns     55206179
+BM_AddChunk/2            14.8 ns         14.8 ns     43988694
+BM_AddChunk/4            9.49 ns         9.49 ns     62507144
+BM_AddChunk/8            9.60 ns         9.60 ns     64111429
+BM_AddChunk/16           9.91 ns         9.91 ns     56639849
+BM_AddChunk/32           9.53 ns         9.53 ns     62369414
+BM_AddChunk/64           9.79 ns         9.79 ns     62445416
+BM_AddChunk/128          9.39 ns         9.39 ns     64539923
+BM_AddChunk/256          9.64 ns         9.64 ns     62255757
+BM_AddChunk/512          11.1 ns         11.1 ns     61535757
+BM_AddChunk/1024         9.25 ns         9.25 ns     64193505
+BM_AddChunk_BigO        10.38 (1)       10.38 (1)  
+BM_AddChunk_RMS            15 %            15 %    
+BM_AccessData/8          21.8 ns         21.8 ns     29196155
+BM_AccessData/64         21.2 ns         21.2 ns     30802010
+BM_AccessData/512        22.1 ns         22.1 ns     31181234
+BM_AccessData/4096       21.7 ns         21.7 ns     30848882
+BM_AccessData/8192       22.1 ns         22.1 ns     29946242
+BM_AccessData_BigO      21.78 (1)       21.78 (1)  
+BM_AccessData_RMS           2 %             2 %    
+data_container_bench completed. 
+===========================================================================================================================
+Running runlength_bench...
+--------------------------------------------------------------------
+Benchmark                          Time             CPU   Iterations
+--------------------------------------------------------------------
+BM_RunlengthEncode/64           65.3 ns         65.3 ns     10586732
+BM_RunlengthEncode/128           122 ns          122 ns      5719772
+BM_RunlengthEncode/256           242 ns          242 ns      2824406
+BM_RunlengthEncode/512           473 ns          473 ns      1482239
+BM_RunlengthEncode/1024          977 ns          977 ns       736317
+BM_RunlengthEncode/2048         1926 ns         1926 ns       366387
+BM_RunlengthEncode/4096         3792 ns         3792 ns       183805
+BM_RunlengthEncode/8192         7625 ns         7625 ns        86292
+BM_RunlengthEncode/16384       15455 ns        15455 ns        46004
+BM_RunlengthEncode/32768       30414 ns        30414 ns        22981
+BM_RunlengthEncode/65536       59577 ns        59577 ns        11515
+BM_RunlengthEncode/128000     120177 ns       120168 ns         5863
+BM_RunlengthEncode_BigO         0.93 N          0.93 N    
+BM_RunlengthEncode_RMS             3 %             3 %    
+BM_RunlengthDecode/64           92.8 ns         92.8 ns      7503580
+BM_RunlengthDecode/128           178 ns          178 ns      3949180
+BM_RunlengthDecode/256           354 ns          354 ns      1992299
+BM_RunlengthDecode/512           697 ns          697 ns       993724
+BM_RunlengthDecode/1024         1417 ns         1417 ns       497063
+BM_RunlengthDecode/2048         2766 ns         2766 ns       243396
+BM_RunlengthDecode/4096         5605 ns         5605 ns       126015
+BM_RunlengthDecode/8192        11167 ns        11167 ns        62441
+BM_RunlengthDecode/16384       22619 ns        22619 ns        31368
+BM_RunlengthDecode/32768       49741 ns        49742 ns        15548
+BM_RunlengthDecode/65536       90054 ns        90055 ns         7784
+BM_RunlengthDecode/128000     182125 ns       182123 ns         3679
+BM_RunlengthDecode_BigO         1.42 N          1.42 N    
+BM_RunlengthDecode_RMS             4 %             4 %    
+runlength_bench completed. 
+===========================================================================================================================
+Running simple8b_bench...
+----------------------------------------------------------------------------
+Benchmark                                  Time             CPU   Iterations
+----------------------------------------------------------------------------
+BM_Simple8bEncodeUnsigned/1024         35431 ns        35431 ns        19647
+BM_Simple8bEncodeUnsigned/4096        140083 ns       140084 ns         5022
+BM_Simple8bEncodeUnsigned/32768      1124191 ns      1124202 ns          618
+BM_Simple8bEncodeUnsigned/262144     8995367 ns      8995342 ns           76
+BM_Simple8bEncodeUnsigned/1048576   36726344 ns     36714625 ns           20
+BM_Simple8bEncodeUnsigned_BigO         34.98 N         34.97 N    
+BM_Simple8bEncodeUnsigned_RMS              1 %             1 %    
+BM_Simple8bDecodeUnsigned/1024          1117 ns         1117 ns       625501
+BM_Simple8bDecodeUnsigned/4096          4486 ns         4486 ns       156167
+BM_Simple8bDecodeUnsigned/32768        36739 ns        36739 ns        19070
+BM_Simple8bDecodeUnsigned/262144      293509 ns       293508 ns         2430
+BM_Simple8bDecodeUnsigned/1048576    1455774 ns      1455769 ns          496
+BM_Simple8bDecodeUnsigned_BigO          0.07 NlgN       0.07 NlgN 
+BM_Simple8bDecodeUnsigned_RMS              4 %             4 %    
+BM_Simple8bEncodeSigned/1024           44755 ns        44718 ns        15647
+BM_Simple8bEncodeSigned/4096          180618 ns       180620 ns         3931
+BM_Simple8bEncodeSigned/32768        1466380 ns      1466379 ns          491
+BM_Simple8bEncodeSigned/262144      12038636 ns     12038738 ns           60
+BM_Simple8bEncodeSigned/1048576     46438662 ns     46439060 ns           15
+BM_Simple8bEncodeSigned_BigO           44.38 N         44.38 N    
+BM_Simple8bEncodeSigned_RMS                2 %             2 %    
+BM_Simple8bDecodeSigned/1024            1822 ns         1818 ns       383124
+BM_Simple8bDecodeSigned/4096            7505 ns         7505 ns        93963
+BM_Simple8bDecodeSigned/32768         161880 ns       161881 ns         4386
+BM_Simple8bDecodeSigned/262144       1333434 ns      1333435 ns          528
+BM_Simple8bDecodeSigned/1048576      5727510 ns      5727487 ns          123
+BM_Simple8bDecodeSigned_BigO            0.27 NlgN       0.27 NlgN 
+BM_Simple8bDecodeSigned_RMS                2 %             2 %    
+simple8b_bench completed. 
+===========================================================================================================================
+Running stripe_bench...
+-----------------------------------------------------------------------
+Benchmark                             Time             CPU   Iterations
+-----------------------------------------------------------------------
+BM_StripeCreation/8               0.459 ns        0.459 ns   1530282431
+BM_StripeCreation/64              0.449 ns        0.449 ns   1560406339
+BM_StripeCreation/512             0.461 ns        0.461 ns   1527465466
+BM_StripeCreation/4096            0.463 ns        0.463 ns   1513876844
+BM_StripeCreation/32768           0.454 ns        0.454 ns   1529338948
+BM_StripeCreation/131072          0.494 ns        0.494 ns   1523669554
+BM_StripeCreation_BigO             0.46 (1)        0.46 (1)  
+BM_StripeCreation_RMS                 3 %             3 %    
+BM_StripeIteration/8               2.00 ns         2.00 ns    345680549
+BM_StripeIteration/64              15.2 ns         15.2 ns     46267502
+BM_StripeIteration/512              118 ns          118 ns      5748254
+BM_StripeIteration/4096             942 ns          942 ns       729403
+BM_StripeIteration/32768           7513 ns         7513 ns        94866
+BM_StripeIteration/131072         30247 ns        30248 ns        23666
+BM_StripeIteration_BigO            0.23 N          0.23 N    
+BM_StripeIteration_RMS                0 %             0 %    
+BM_StripeRandomAccess/8            2.02 ns         2.02 ns    350448925
+BM_StripeRandomAccess/64           15.0 ns         15.0 ns     46319150
+BM_StripeRandomAccess/512           120 ns          120 ns      5766542
+BM_StripeRandomAccess/4096          919 ns          919 ns       762347
+BM_StripeRandomAccess/32768        7338 ns         7338 ns        95689
+BM_StripeRandomAccess/131072      29330 ns        29330 ns        23655
+BM_StripeRandomAccess_BigO         0.22 N          0.22 N    
+BM_StripeRandomAccess_RMS             0 %             0 %    
+BM_StripeReinterpret/8            0.469 ns        0.469 ns   1521539676
+BM_StripeReinterpret/64           0.466 ns        0.466 ns   1493729431
+BM_StripeReinterpret/512          0.468 ns        0.468 ns   1473575321
+BM_StripeReinterpret/4096         0.464 ns        0.464 ns   1499313957
+BM_StripeReinterpret/32768        0.471 ns        0.471 ns   1525751858
+BM_StripeReinterpret/131072       0.459 ns        0.459 ns   1513357106
+BM_StripeReinterpret_BigO          0.47 (1)        0.47 (1)  
+BM_StripeReinterpret_RMS              1 %             1 %    
+stripe_bench completed. 
+===========================================================================================================================
+Running xor_bench...
+-----------------------------------------------------------------------
+Benchmark                             Time             CPU   Iterations
+-----------------------------------------------------------------------
+BM_XorEncodeFlatArray/8            2.37 ns         2.37 ns    287325419
+BM_XorEncodeFlatArray/64           18.5 ns         18.5 ns     37976586
+BM_XorEncodeFlatArray/512           144 ns          144 ns      4902774
+BM_XorEncodeFlatArray/4096         1197 ns         1197 ns       589872
+BM_XorEncodeFlatArray/32768       10484 ns        10484 ns        66710
+BM_XorEncodeFlatArray/131072      43927 ns        43927 ns        16024
+BM_XorEncodeFlatArray_BigO         0.33 N          0.33 N    
+BM_XorEncodeFlatArray_RMS             2 %             2 %    
+BM_XorDecodeFlatArray/8            2.91 ns         2.91 ns    242786972
+BM_XorDecodeFlatArray/64           20.3 ns         20.3 ns     34069146
+BM_XorDecodeFlatArray/512           162 ns          162 ns      4298616
+BM_XorDecodeFlatArray/4096         1292 ns         1292 ns       509960
+BM_XorDecodeFlatArray/32768       11043 ns        11044 ns        63438
+BM_XorDecodeFlatArray/131072      44822 ns        44822 ns        15640
+BM_XorDecodeFlatArray_BigO         0.34 N          0.34 N    
+BM_XorDecodeFlatArray_RMS             1 %             1 %    
+BM_XorEncodeStripe/8               2.28 ns         2.28 ns    305375747
+BM_XorEncodeStripe/64              19.1 ns         19.1 ns     37347177
+BM_XorEncodeStripe/512              155 ns          155 ns      4527213
+BM_XorEncodeStripe/4096            1197 ns         1197 ns       582596
+BM_XorEncodeStripe/32768          11264 ns        11264 ns        51162
+BM_XorEncodeStripe/131072         42607 ns        42607 ns        16270
+BM_XorEncodeStripe_BigO            0.33 N          0.33 N    
+BM_XorEncodeStripe_RMS                3 %             3 %    
+BM_XorDecodeStripe/8               2.33 ns         2.33 ns    302507790
+BM_XorDecodeStripe/64              19.9 ns         19.9 ns     35362965
+BM_XorDecodeStripe/512              169 ns          169 ns      4182980
+BM_XorDecodeStripe/4096            1327 ns         1327 ns       533645
+BM_XorDecodeStripe/32768          10981 ns        10981 ns        62899
+BM_XorDecodeStripe/131072         44220 ns        44220 ns        15625
+BM_XorDecodeStripe_BigO            0.34 N          0.34 N    
+BM_XorDecodeStripe_RMS                0 %             0 %    
+xor_bench completed. 
+===========================================================================================================================
