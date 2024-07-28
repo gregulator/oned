@@ -14,3 +14,52 @@ cc_binary(
     deps = ["@google_benchmark//:benchmark","//oned:stripe","//oned:chunks"],
     copts = ["--std=c++20"],
 )
+
+cc_binary(
+    name = "data_container_bench",
+    srcs = ["data_container_bench.cc"],
+    deps = [
+        "//oned:data_container",
+        "@google_benchmark//:benchmark",
+    ],
+    copts = ["--std=c++20"],
+)
+
+cc_binary(
+    name = "runlength_bench",
+    srcs = ["runlength_bench.cc"],
+    deps = [
+        "//oned:runlength",
+        "@google_benchmark//:benchmark",
+    ],
+    copts = ["--std=c++20"],
+)
+
+cc_binary(
+    name = "simple8b_bench",
+    srcs = ["simple8b_bench.cc"],
+    deps = [
+        "//oned:simple8b",
+        "@google_benchmark//:benchmark",
+    ],
+    copts = ["--std=c++20"],
+)
+
+cc_binary(
+    name = "stripe_bench",
+    srcs = ["stripe_bench.cc"],
+    deps = [
+        "//oned:stripe",
+        "@google_benchmark//:benchmark",
+    ],
+    copts = ["--std=c++20"],
+)
+cc_binary(
+    name = "xor_bench",
+    srcs = ["xor_bench.cc"],
+    deps = [
+        "//oned:xor","//oned:stripe",
+        "@google_benchmark//:benchmark",
+    ],
+    copts = ["--std=c++20"],
+)
