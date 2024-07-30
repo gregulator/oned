@@ -2,10 +2,11 @@
 #include "oned/chunks.hpp"
 #include <vector>
 #include <numeric>
-// Function to generate a test sequence
+
+
 std::vector<int> GenerateTestSequence(size_t size) {
   std::vector<int> data(size);
-  std::iota(data.begin(), data.end(), 0);  // Simple increasing sequence
+  std::iota(data.begin(), data.end(), 0);
   return data;
 }
 
@@ -19,6 +20,7 @@ static void BM_ConstructChunks(benchmark::State &state) {
     oned::Chunks<int> chunks(data, chunk_size);
     benchmark::DoNotOptimize(chunks);
   }
+  state.SetComplexityN(state.range(0));
 }
 
 // Benchmark for iterating over Chunks
@@ -33,10 +35,11 @@ static void BM_IterateChunks(benchmark::State &state) {
       benchmark::DoNotOptimize(chunk);
     }
   }
+  state.SetComplexityN(state.range(0));
 }
 
-// Register the benchmarks
-BENCHMARK(BM_ConstructChunks)->Ranges({{8, 8 << 10}, {2, 64}});
-BENCHMARK(BM_IterateChunks)->Ranges({{8, 8 << 10}, {2, 64}});
+// Register the benchmarks with complexity analysis
+BENCHMARK(BM_ConstructChunks)->Ranges({{8, 8 << 10}, {2, 64}})->Complexity();
+BENCHMARK(BM_IterateChunks)->Ranges({{8, 8 << 10}, {2, 64}})->Complexity();
 
 BENCHMARK_MAIN();
