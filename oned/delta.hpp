@@ -170,48 +170,53 @@ DeltaResult DeltaDecode(SourceR &&source, DestR &&dest) {
   } while (s != source.end());
   return DeltaResult::kOk;
 }
-//{2, 3, -1, 6, -1, 4, 4, -1, 16, -27, -2}
-//{2, 5, 4, 10, 9, 13, 17, 16, 32, 5, 3 }
+
 template <typename SourceR, typename DestR>
-  requires DeltaEncodable<SourceR, DestR>
+requires DeltaEncodable<SourceR, DestR>
 DeltaResult DeltaDecodeSIMD(SourceR &&source, DestR &&dest) {
-  if (std::ranges::size(source) != std::ranges::size(dest)) {
-    return DeltaResult::kSizeMismatch;
-  }
-  const size_t size = std::ranges::size(source);
-  const size_t simd_width = 8;
-  size_t i = 0;
-
-  dest[i] = source[i];
-  int prev = dest[i];
-  i++;
-
-  for (; i + simd_width <= size; i += simd_width) {
-    __m256i src_chunk = _mm256_loadu_si256((__m256i*)&source[i]);
-
-    int cumulative_sums[simd_width];
-    cumulative_sums[0] = prev;
-    for (size_t j = 1; j < simd_width; ++j) {
-      cumulative_sums[j] = cumulative_sums[j - 1] + source[i + j - 1];
+    if (std::ranges::size(source) != std::ranges::size(dest)) {
+        return DeltaResult::kSizeMismatch;
     }
 
-    __m256i prev_vec = _mm256_set_epi32(
-        cumulative_sums[7], cumulative_sums[6], cumulative_sums[5], cumulative_sums[4],
-        cumulative_sums[3], cumulative_sums[2], cumulative_sums[1], cumulative_sums[0]
-    );
-    src_chunk = _mm256_add_epi32(src_chunk, prev_vec);
-    _mm256_storeu_si256((__m256i*)&dest[i], src_chunk);
-    prev = _mm256_extract_epi32(src_chunk, simd_width - 1);
-  }
+    const size_t size = std::ranges::size(source);
+    const size_t simd_width = 8;
 
-  // Scalar decoding for the remaining elements
-  for (; i < size; ++i) {
-    dest[i] = source[i] + prev;
-    prev = dest[i];
-  }
+    dest[0] = source[0]; // Initialize the first element
 
-  return DeltaResult::kOk;
+    size_t i = 1;
+    int prev = dest[0];
+
+    for (; i + simd_width <= size; i += simd_width) {
+        __m256i src_chunk = _mm256_loadu_si256((__m256i*)&source[i]);
+
+        // Load the previous cumulative sum
+        __m256i prev_vec = _mm256_set1_epi32(prev);
+
+        __m256i cum_sum = _mm256_add_epi32(src_chunk, _mm256_slli_si256(src_chunk, 4));
+        cum_sum = _mm256_add_epi32(cum_sum, _mm256_slli_si256(cum_sum, 8));
+
+        // Extract the upper 128-bit lane of the cumulative sum
+        __m128i cum_upper = _mm256_extracti128_si256(cum_sum, 1);
+        int last_lower = _mm_extract_epi32(_mm256_castsi256_si128(cum_sum), 3);
+        cum_upper = _mm_add_epi32(cum_upper, _mm_set1_epi32(last_lower));
+
+        // Combine the adjusted upper lane back into the full 256-bit register
+        cum_sum = _mm256_inserti128_si256(cum_sum, cum_upper, 1);
+
+        cum_sum = _mm256_add_epi32(cum_sum, prev_vec);
+        _mm256_storeu_si256((__m256i*)&dest[i], cum_sum);
+        prev = _mm256_extract_epi32(cum_sum, simd_width - 1);
+    }
+
+    // Process remaining elements using scalar code
+    for (; i < size; ++i) {
+        dest[i] = source[i] + prev;
+        prev = dest[i];
+    }
+
+    return DeltaResult::kOk;
 }
+
 
 
 static_assert(DeltaEncodable<std::vector<int>, std::vector<double>>);
