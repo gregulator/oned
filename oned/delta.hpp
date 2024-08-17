@@ -179,45 +179,46 @@ DeltaResult DeltaDecodeSIMD(SourceR &&source, DestR &&dest) {
     }
 
     const size_t size = std::ranges::size(source);
-    const size_t simd_width = 8;
+    const size_t simd_width = 8;  // Width for SIMD operations (256-bit registers)
+    const size_t block_size = 4;  // Block size for accumulation
 
-    dest[0] = source[0]; // Initialize the first element
 
-    size_t i = 1;
-    int prev = dest[0];
+    size_t i = 0;
+    __m256i prefix_sum = _mm256_setzero_si256();
 
+    // First pass: Compute prefix sums for each block
     for (; i + simd_width <= size; i += simd_width) {
         __m256i src_chunk = _mm256_loadu_si256((__m256i*)&source[i]);
 
-        // Load the previous cumulative sum
-        __m256i prev_vec = _mm256_set1_epi32(prev);
+        // Compute prefix sums for the current chunk
+        __m256i prefix = _mm256_add_epi32(src_chunk, _mm256_slli_si256(src_chunk, 4));
+        prefix = _mm256_add_epi32(prefix, _mm256_slli_si256(prefix, 8));
 
-        __m256i cum_sum = _mm256_add_epi32(src_chunk, _mm256_slli_si256(src_chunk, 4));
-        cum_sum = _mm256_add_epi32(cum_sum, _mm256_slli_si256(cum_sum, 8));
+        // Store results
+        _mm256_storeu_si256((__m256i*)&dest[i], prefix);
 
-        // Extract the upper 128-bit lane of the cumulative sum
-        __m128i cum_upper = _mm256_extracti128_si256(cum_sum, 1);
-        int last_lower = _mm_extract_epi32(_mm256_castsi256_si128(cum_sum), 3);
-        cum_upper = _mm_add_epi32(cum_upper, _mm_set1_epi32(last_lower));
-
-        // Combine the adjusted upper lane back into the full 256-bit register
-        cum_sum = _mm256_inserti128_si256(cum_sum, cum_upper, 1);
-
-        cum_sum = _mm256_add_epi32(cum_sum, prev_vec);
-        _mm256_storeu_si256((__m256i*)&dest[i], cum_sum);
-        prev = _mm256_extract_epi32(cum_sum, simd_width - 1);
     }
+    
+    // Second pass: Accumulate prefix sums and propagate
+    __m128i s = _mm_setzero_si128(); // Initialize block accumulator for 4-element blocks
+    for (size_t j = 0; j + block_size < size; j += block_size){
 
-    // Process remaining elements using scalar code
+        __m128i d = (__m128i) _mm_broadcast_ss((float*) &dest[j + 3]);
+        __m128i x = _mm_load_si128((__m128i*) &dest[j]);
+        x = _mm_add_epi32(s, x);
+        _mm_store_si128((__m128i*) &dest[j], x);
+        
+        s = _mm_add_epi32(s, d);
+        // Update prefix_sum based on the last element of the processed block
+        prefix_sum = _mm256_set1_epi32(_mm_cvtsi128_si32(_mm_shuffle_epi32(s, 0xFF))); // Broadcast the last element of s
+    }
+    // Process remaining elements if size is not a perfect multiple of block_size
     for (; i < size; ++i) {
-        dest[i] = source[i] + prev;
-        prev = dest[i];
+        dest[i] = source[i] + _mm256_extract_epi32(prefix_sum, 0);
+        prefix_sum = _mm256_set1_epi32(dest[i]); // Update prefix_sum for the next element
     }
-
     return DeltaResult::kOk;
 }
-
-
 
 static_assert(DeltaEncodable<std::vector<int>, std::vector<double>>);
 static_assert(!DeltaEncodable<std::vector<std::string>, std::vector<double>>);
