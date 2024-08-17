@@ -1,2 +1,4 @@
 build --action_env=BAZEL_CXXOPTS="-std=c++20"
+build --cxxopt="-mavx2"
+build --cxxopt="-mfma"
 test --test_output=all

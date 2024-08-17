@@ -6,6 +6,7 @@
 #include <ranges>
 #include <string>
 #include <vector>
+#include <immintrin.h>
 // This file defines functions for delta-encoding (and delta-decoding) of
 // integer sequences:
 //
@@ -111,6 +112,45 @@ DeltaResult DeltaEncode(SourceR &&source, DestR &&dest) {
   } while (s != source.end());
   return DeltaResult::kOk;
 }
+
+template <typename SourceR, typename DestR>
+  requires DeltaEncodable<SourceR, DestR>
+DeltaResult DeltaEncodeSMID(SourceR &&source, DestR &&dest) {
+  if (std::ranges::size(source) != std::ranges::size(dest)) {
+    return DeltaResult::kSizeMismatch;
+  }
+  const size_t size = std::ranges::size(source);
+  const size_t simd_width = 8; // AVX2 processes 8 integers at a time (256 bits / 32 bits per int)
+  size_t i = 0;
+
+  // Scalar encoding for the first element
+  dest[i] = source[i];
+  int prev = source[i];
+  i++;
+  //{2, 5, 4, 10, 9};
+  // SIMD encoding for chunks of 8 integers
+  for (; i + simd_width <= size; i += simd_width) {
+    auto old = source[i+simd_width - 1];
+    __m256i src_chunk = _mm256_loadu_si256((__m256i*)&source[i]);  // Load 8 integers
+    __m256i prev_vec = _mm256_set_epi32(
+        source[i + 6], source[i + 5], source[i + 4], source[i + 3], 
+        source[i + 2], source[i + 1], source[i], prev
+    );                    // Set 'prev' in all positions
+    __m256i result = _mm256_sub_epi32(src_chunk, prev_vec);        // Subtract previous values
+    _mm256_storeu_si256((__m256i*)&dest[i], result);               // Store result
+    prev = old;                             // Update prev to last in chunk
+  }
+
+  // Scalar encoding for the remaining elements
+  for (; i < size; ++i) {
+    auto old = source[i]; // Needed for in-place encoding.
+    dest[i] = source[i] - prev;
+    prev = old;
+  }
+
+  return DeltaResult::kOk;
+}
+
 
 template <typename SourceR, typename DestR>
   requires DeltaEncodable<SourceR, DestR>
