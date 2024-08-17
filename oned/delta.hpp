@@ -74,6 +74,7 @@ enum class DeltaResult {
 //
 // Returns DeltaResult::kOk on success.
 // Returns DeltaResult::kSizeMismatch if `source` and `dest` differ in size.
+// DeltaEncodeSIMD() is SIMD optimize version of DeltaEncode()
 template <typename SourceR, typename DestR>
   requires DeltaEncodable<SourceR, DestR>
 DeltaResult DeltaEncode(SourceR &&source, DestR &&dest);
@@ -87,6 +88,7 @@ DeltaResult DeltaEncode(SourceR &&source, DestR &&dest);
 //
 // Returns DeltaResult::kOk on success.
 // Returns DeltaResult::kSizeMismatch if `source` and `dest` differ in size.
+// DeltaDecodeSIMD() is SIMD optimize version of DeltaDecode()
 template <typename SourceR, typename DestR>
   requires DeltaEncodable<SourceR, DestR>
 DeltaResult DeltaDecode(SourceR &&source, DestR &&dest);
@@ -115,30 +117,28 @@ DeltaResult DeltaEncode(SourceR &&source, DestR &&dest) {
 
 template <typename SourceR, typename DestR>
   requires DeltaEncodable<SourceR, DestR>
-DeltaResult DeltaEncodeSMID(SourceR &&source, DestR &&dest) {
+DeltaResult DeltaEncodeSIMD(SourceR &&source, DestR &&dest) {
   if (std::ranges::size(source) != std::ranges::size(dest)) {
     return DeltaResult::kSizeMismatch;
   }
   const size_t size = std::ranges::size(source);
-  const size_t simd_width = 8; // AVX2 processes 8 integers at a time (256 bits / 32 bits per int)
+  const size_t simd_width = 8;
   size_t i = 0;
 
-  // Scalar encoding for the first element
   dest[i] = source[i];
   int prev = source[i];
   i++;
-  //{2, 5, 4, 10, 9};
-  // SIMD encoding for chunks of 8 integers
+
   for (; i + simd_width <= size; i += simd_width) {
     auto old = source[i+simd_width - 1];
-    __m256i src_chunk = _mm256_loadu_si256((__m256i*)&source[i]);  // Load 8 integers
+    __m256i src_chunk = _mm256_loadu_si256((__m256i*)&source[i]);
     __m256i prev_vec = _mm256_set_epi32(
         source[i + 6], source[i + 5], source[i + 4], source[i + 3], 
         source[i + 2], source[i + 1], source[i], prev
-    );                    // Set 'prev' in all positions
-    __m256i result = _mm256_sub_epi32(src_chunk, prev_vec);        // Subtract previous values
-    _mm256_storeu_si256((__m256i*)&dest[i], result);               // Store result
-    prev = old;                             // Update prev to last in chunk
+    );
+    __m256i result = _mm256_sub_epi32(src_chunk, prev_vec);
+    _mm256_storeu_si256((__m256i*)&dest[i], result);
+    prev = old;
   }
 
   // Scalar encoding for the remaining elements
@@ -170,6 +170,49 @@ DeltaResult DeltaDecode(SourceR &&source, DestR &&dest) {
   } while (s != source.end());
   return DeltaResult::kOk;
 }
+//{2, 3, -1, 6, -1, 4, 4, -1, 16, -27, -2}
+//{2, 5, 4, 10, 9, 13, 17, 16, 32, 5, 3 }
+template <typename SourceR, typename DestR>
+  requires DeltaEncodable<SourceR, DestR>
+DeltaResult DeltaDecodeSIMD(SourceR &&source, DestR &&dest) {
+  if (std::ranges::size(source) != std::ranges::size(dest)) {
+    return DeltaResult::kSizeMismatch;
+  }
+  const size_t size = std::ranges::size(source);
+  const size_t simd_width = 8;
+  size_t i = 0;
+
+  dest[i] = source[i];
+  int prev = dest[i];
+  i++;
+
+  for (; i + simd_width <= size; i += simd_width) {
+    __m256i src_chunk = _mm256_loadu_si256((__m256i*)&source[i]);
+
+    int cumulative_sums[simd_width];
+    cumulative_sums[0] = prev;
+    for (size_t j = 1; j < simd_width; ++j) {
+      cumulative_sums[j] = cumulative_sums[j - 1] + source[i + j - 1];
+    }
+
+    __m256i prev_vec = _mm256_set_epi32(
+        cumulative_sums[7], cumulative_sums[6], cumulative_sums[5], cumulative_sums[4],
+        cumulative_sums[3], cumulative_sums[2], cumulative_sums[1], cumulative_sums[0]
+    );
+    src_chunk = _mm256_add_epi32(src_chunk, prev_vec);
+    _mm256_storeu_si256((__m256i*)&dest[i], src_chunk);
+    prev = _mm256_extract_epi32(src_chunk, simd_width - 1);
+  }
+
+  // Scalar decoding for the remaining elements
+  for (; i < size; ++i) {
+    dest[i] = source[i] + prev;
+    prev = dest[i];
+  }
+
+  return DeltaResult::kOk;
+}
+
 
 static_assert(DeltaEncodable<std::vector<int>, std::vector<double>>);
 static_assert(!DeltaEncodable<std::vector<std::string>, std::vector<double>>);

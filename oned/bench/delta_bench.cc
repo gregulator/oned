@@ -23,13 +23,13 @@ static void BM_DeltaEncode(benchmark::State &state) {
 }
 
 // Benchmark for the SIMD version of DeltaEncode
-static void BM_DeltaEncodeSMID(benchmark::State &state) {
+static void BM_DeltaEncodeSIMD(benchmark::State &state) {
   auto size = static_cast<size_t>(state.range(0));
   auto source = GenerateTestSequence(size);
   std::vector<int> dest(size);
 
   for (auto _ : state) {
-    oned::DeltaEncodeSMID(source, dest);
+    oned::DeltaEncodeSIMD(source, dest);
   }
   state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) * size * sizeof(int));
 }
@@ -47,9 +47,23 @@ static void BM_DeltaDecode(benchmark::State &state) {
   }
   state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) * size * sizeof(int));
 }
+static void BM_DeltaDecodeSIMD(benchmark::State &state) {
+  auto size = static_cast<size_t>(state.range(0));
+  auto source = GenerateTestSequence(size);
+  std::vector<int> encoded(size);
+  std::vector<int> dest(size);
+
+  oned::DeltaEncode(source, encoded);
+
+  for (auto _ : state) {
+    oned::DeltaDecodeSIMD(encoded, dest);
+  }
+  state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) * size * sizeof(int));
+}
 
 BENCHMARK(BM_DeltaEncode)->Range(8, 8 << 10);
-BENCHMARK(BM_DeltaEncodeSMID)->Range(8, 8 << 10);
+BENCHMARK(BM_DeltaEncodeSIMD)->Range(8, 8 << 10);
 BENCHMARK(BM_DeltaDecode)->Range(8, 8 << 10);
+BENCHMARK(BM_DeltaDecodeSIMD)->Range(8, 8 << 10);
 
 BENCHMARK_MAIN();
