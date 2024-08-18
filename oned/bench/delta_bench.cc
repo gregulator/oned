@@ -61,9 +61,9 @@ static void BM_DeltaDecodeSIMD(benchmark::State &state) {
   state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) * size * sizeof(int));
 }
 
-BENCHMARK(BM_DeltaEncode)->Range(8, 8 << 13);
-BENCHMARK(BM_DeltaEncodeSIMD)->Range(8, 8 << 13);
-BENCHMARK(BM_DeltaDecode)->Range(8, 8 << 13);
-BENCHMARK(BM_DeltaDecodeSIMD)->Range(8, 8 << 13);
+BENCHMARK(BM_DeltaEncode)->Range(8, 8 << 14)->Complexity();
+BENCHMARK(BM_DeltaEncodeSIMD)->Range(8, 8 << 14)->Complexity();
+BENCHMARK(BM_DeltaDecode)->Range(8, 8 << 14)->Complexity();
+BENCHMARK(BM_DeltaDecodeSIMD)->Range(8, 8 << 14)->Complexity();
 
 BENCHMARK_MAIN();

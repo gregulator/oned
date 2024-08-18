@@ -157,3 +157,38 @@ TEST(DeltaEncodingTest, EncodeDecodeSIMDRGB) {
   EXPECT_EQ(oned::DeltaEncodeSIMD(blue_channel, encoded), oned::DeltaResult::kOk);
   EXPECT_EQ(encoded, (std::vector<uint8_t>{0xA8, 0, 0, 0, 0}));
 }
+
+
+// Test for DeltaEncode with int vector (length > 24)
+TEST(DeltaTest, DeltaEncodeIntVectorLarge) {
+    std::vector<int> orig = {2, 5, 4, 10, 9, 13, 17, 16, 32, 5, 3, 8, 7, 11, 15, 20, 30, 50, 75, 100, 150, 200, 250, 300, 350, 400,401};
+    std::vector<int> encoded(orig.size());
+    auto result = oned::DeltaEncode(orig, encoded);
+    EXPECT_EQ(result, oned::DeltaResult::kOk);
+    EXPECT_EQ(encoded, (std::vector<int>{2, 3, -1, 6, -1, 4, 4, -1, 16, -27, -2, 5, -1, 4, 4, 5, 10, 20, 25, 25, 50, 50, 50, 50, 50, 50,1}));
+}
+
+TEST(DeltaTest, DeltaEncodeSIMDIntVectorLarge) {
+    std::vector<int> orig = {2, 5, 4, 10, 9, 13, 17, 16, 32, 5, 3, 8, 7, 11, 15, 20, 30, 50, 75, 100, 150, 200, 250, 300, 350, 400};
+    std::vector<int> encoded(orig.size());
+    auto result = oned::DeltaEncodeSIMD(orig, encoded);
+    EXPECT_EQ(result, oned::DeltaResult::kOk);
+    EXPECT_EQ(encoded, (std::vector<int>{2, 3, -1, 6, -1, 4, 4, -1, 16, -27, -2, 5, -1, 4, 4, 5, 10, 20, 25, 25, 50, 50, 50, 50, 50, 50}));
+}
+
+// Test for DeltaDecode with int vector (length > 24)
+TEST(DeltaTest, DeltaDecodeIntVectorLarge) {
+    std::vector<int> encoded = {2, 3, -1, 6, -1, 4, 4, -1, 16, -27, -2, 5, -1, 4, 4, 5, 10, 20, 25, 25, 50, 50, 50, 50, 50, 50};
+    std::vector<int> decoded(encoded.size());
+    auto result = oned::DeltaDecode(encoded, decoded);
+    EXPECT_EQ(result, oned::DeltaResult::kOk);
+    EXPECT_EQ(decoded, (std::vector<int>{2, 5, 4, 10, 9, 13, 17, 16, 32, 5, 3, 8, 7, 11, 15, 20, 30, 50, 75, 100, 150, 200, 250, 300, 350, 400}));
+}
+
+TEST(DeltaTest, DeltaDecodeSIMDIntVectorLarge) {
+    std::vector<int> encoded = {2, 3, -1, 6, -1, 4, 4, -1, 16, -27, -2, 5, -1, 4, 4, 5, 10, 20, 25, 25, 50, 50, 50, 50, 50, 50};
+    std::vector<int> decoded(encoded.size());
+    auto result = oned::DeltaDecodeSIMD(encoded, decoded);
+    EXPECT_EQ(result, oned::DeltaResult::kOk);
+    EXPECT_EQ(decoded, (std::vector<int>{2, 5, 4, 10, 9, 13, 17, 16, 32, 5, 3, 8, 7, 11, 15, 20, 30, 50, 75, 100, 150, 200, 250, 300, 350, 400}));
+}

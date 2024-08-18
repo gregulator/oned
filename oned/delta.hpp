@@ -186,20 +186,15 @@ DeltaResult DeltaDecodeSIMD(SourceR &&source, DestR &&dest) {
     size_t i = 0;
     __m256i prefix_sum = _mm256_setzero_si256();
 
-    // First pass: Compute prefix sums for each block
     for (; i + simd_width <= size; i += simd_width) {
         __m256i src_chunk = _mm256_loadu_si256((__m256i*)&source[i]);
-
-        // Compute prefix sums for the current chunk
         __m256i prefix = _mm256_add_epi32(src_chunk, _mm256_slli_si256(src_chunk, 4));
         prefix = _mm256_add_epi32(prefix, _mm256_slli_si256(prefix, 8));
-
-        // Store results
         _mm256_storeu_si256((__m256i*)&dest[i], prefix);
 
     }
     
-    // Second pass: Accumulate prefix sums and propagate
+    // The 256-bit version of this instruction performs this byte shift independently within two 128-bit lanes, which is typical to AVX since we need accumulating
     __m128i s = _mm_setzero_si128(); // Initialize block accumulator for 4-element blocks
     for (size_t j = 0; j + block_size < size; j += block_size){
 
@@ -207,15 +202,13 @@ DeltaResult DeltaDecodeSIMD(SourceR &&source, DestR &&dest) {
         __m128i x = _mm_load_si128((__m128i*) &dest[j]);
         x = _mm_add_epi32(s, x);
         _mm_store_si128((__m128i*) &dest[j], x);
-        
         s = _mm_add_epi32(s, d);
-        // Update prefix_sum based on the last element of the processed block
-        prefix_sum = _mm256_set1_epi32(_mm_cvtsi128_si32(_mm_shuffle_epi32(s, 0xFF))); // Broadcast the last element of s
+        prefix_sum = _mm256_set1_epi32(_mm_cvtsi128_si32(_mm_shuffle_epi32(s, 0xFF)));
     }
     // Process remaining elements if size is not a perfect multiple of block_size
     for (; i < size; ++i) {
         dest[i] = source[i] + _mm256_extract_epi32(prefix_sum, 0);
-        prefix_sum = _mm256_set1_epi32(dest[i]); // Update prefix_sum for the next element
+        prefix_sum = _mm256_set1_epi32(dest[i]);
     }
     return DeltaResult::kOk;
 }

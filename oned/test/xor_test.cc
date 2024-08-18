@@ -12,19 +12,28 @@ bool vectorsEqual(const std::vector<T>& a, const std::vector<T>& b) {
 }
 
 TEST(XorEncodeDecodeTest, BasicFunctionality) {
-    std::vector<int> orig = {0xFF, 0xF7, 0xF3, 0xF1, 0xF0};
+    std::vector<int> orig = {
+        0xFF, 0xF7, 0xF3, 0xF1, 0xF0, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA,
+        0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00,
+        0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70
+    };
     std::vector<int> encoded(orig.size());
     std::vector<int> decoded(orig.size());
 
     oned::XorEncode(orig.data(), encoded.data(), orig.size());
     oned::XorDecode(encoded.data(), decoded.data(), encoded.size());
 
+    EXPECT_EQ(orig,decoded);
     EXPECT_TRUE(vectorsEqual(orig, decoded));
 }
 
 // Test XorEncode and XorDecode with a Stripe of integers
 TEST(XorTest, XorEncodeDecodeStripe) {
-    std::vector<int> original = {0xFF, 0xF7, 0xF3, 0xF1, 0xF0};
+    std::vector<int> original = {
+        0xFF, 0xF7, 0xF3, 0xF1, 0xF0, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA,
+        0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00,
+        0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70
+    };
 
     oned::Stripe<int> originalStripe(original.data(), original.size(), sizeof(int));
     oned::Stripe<int> encodedStripe(original.data(), original.size(), sizeof(int));
