@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <iostream>
 #include <optional>
-
+#include <immintrin.h>
 // This file defines functions for Simple8b encoding and decoding of integer
 // sequences. The algorithm is as described by Ann and Moffat in "Index
 // compression using 64-bit words", Softw. Pract. Exper. 2010; 40:131–147
@@ -164,6 +164,56 @@ EncodeWordsResult EncodeWords(SourceT *source, Simple8bBitPacking packing,
       .encoded_value = out,
   };
 }
+template <std::unsigned_integral SourceT>
+EncodeWordsResult EncodeWords_SIMD(SourceT *source, Simple8bBitPacking packing,
+                                   size_t max_count) {
+  constexpr size_t simd_width = 16; // AVX2 processes 16 uint16_t elements at once
+  const __m256i shift_amounts = _mm256_set_epi64x(
+      packing.bitwidth * 3, packing.bitwidth * 2, packing.bitwidth * 1, 0);
+
+  uint64_t out = ((uint64_t)packing.selector) << 60;
+  size_t i = 0;
+
+  for (; i + simd_width <= packing.count; i += simd_width) {
+    // Load 16 elements from source
+    __m256i values = _mm256_loadu_si256((__m256i*)(&source + i));
+
+    // Check if all values fit in bitwidth (if not, bail out)
+    __m256i overflow_mask = _mm256_set1_epi16(((uint16_t)1 << packing.bitwidth) - 1);
+    if (_mm256_movemask_epi8(_mm256_cmpgt_epi16(values, overflow_mask)) != 0) {
+      return EncodeWordsResult{.ok = false};
+    }
+
+    // Generate the shifts for each element
+    __m256i shifts = _mm256_sllv_epi64(values, shift_amounts);
+
+    // Horizontally OR the shifted values together
+    uint64_t shifted_values = _mm256_extract_epi64(shifts, 0) | 
+                              _mm256_extract_epi64(shifts, 1) | 
+                              _mm256_extract_epi64(shifts, 2) | 
+                              _mm256_extract_epi64(shifts, 3);
+
+    out |= shifted_values;
+  }
+
+  // Process remaining elements if any
+  for (; i < packing.count; i++) {
+    if (i >= max_count) {
+      return EncodeWordsResult{.ok = false};
+    }
+    if (source[i] >= (((uint64_t)1) << packing.bitwidth)) {
+      return EncodeWordsResult{.ok = false};
+    }
+    out |= ((uint64_t)source[i]) << (packing.bitwidth * i);
+  }
+
+  return EncodeWordsResult{
+      .ok = true,
+      .next_read = (uint64_t *)&source[i],
+      .encoded_value = out,
+  };
+}
+
 
 template <std::signed_integral SourceT>
 EncodeWordsResult EncodeWords(SourceT *source, Simple8bBitPacking packing,
@@ -195,6 +245,77 @@ EncodeWordsResult EncodeWords(SourceT *source, Simple8bBitPacking packing,
       .encoded_value = out,
   };
 }
+template <std::signed_integral SourceT>
+EncodeWordsResult EncodeWords_SIMD(SourceT *source, Simple8bBitPacking packing,
+                                   size_t max_count) {
+  constexpr size_t simd_width = 16; // AVX2 processes 16 int16_t elements at once
+  const __m256i shift_amounts = _mm256_set_epi64x(
+      packing.bitwidth * 3, packing.bitwidth * 2, packing.bitwidth * 1, 0);
+
+  uint64_t out = ((uint64_t)packing.selector) << 60;
+  size_t i = 0;
+
+  for (; i + simd_width <= packing.count; i += simd_width) {
+    // Load 16 elements from source
+    __m256i values = _mm256_loadu_si256((__m256i*)(&source + i));
+
+    // Handle the case where bitwidth is 0 (all values must be zero)
+    if (packing.bitwidth == 0) {
+      if (_mm256_movemask_epi8(_mm256_cmpeq_epi16(values, _mm256_setzero_si256())) != 0xFFFF) {
+        return EncodeWordsResult{.ok = false};
+      }
+      continue;
+    }
+
+    // Check if all values fit in bitwidth (if not, bail out)
+    int64_t max_val = ((int64_t)1 << (packing.bitwidth - 1)) - 1;
+    int64_t min_val = -((int64_t)1 << (packing.bitwidth - 1));
+    __m256i max_mask = _mm256_set1_epi16(max_val);
+    __m256i min_mask = _mm256_set1_epi16(min_val);
+
+    // Check if any values are out of range
+    if (_mm256_movemask_epi8(_mm256_or_si256(_mm256_cmpgt_epi16(values, max_mask),
+                                             _mm256_cmpgt_epi16(min_mask, values))) != 0) {
+      return EncodeWordsResult{.ok = false};
+    }
+
+    // Mask and shift each value appropriately
+    __m256i masked_values = _mm256_and_si256(values, _mm256_set1_epi16(((1 << packing.bitwidth) - 1)));
+    __m256i shifts = _mm256_sllv_epi64(masked_values, shift_amounts);
+
+    // Horizontally OR the shifted values together
+    uint64_t shifted_values = _mm256_extract_epi64(shifts, 0) | 
+                              _mm256_extract_epi64(shifts, 1) | 
+                              _mm256_extract_epi64(shifts, 2) | 
+                              _mm256_extract_epi64(shifts, 3);
+
+    out |= shifted_values;
+  }
+
+  // Process remaining elements if any
+  for (; i < packing.count; i++) {
+    if (i >= max_count) {
+      return EncodeWordsResult{.ok = false};
+    }
+    if (packing.bitwidth == 0 && source[i] != 0) {
+      return EncodeWordsResult{.ok = false};
+    }
+    if (source[i] >= (((int64_t)1) << (packing.bitwidth - 1)) ||
+        source[i] < -((int64_t)1 << (packing.bitwidth - 1))) {
+      return EncodeWordsResult{.ok = false};
+    }
+    out |= ((uint64_t)((int64_t)source[i]) &
+            (((uint64_t)1 << packing.bitwidth) - 1))
+           << (packing.bitwidth * i);
+  }
+
+  return EncodeWordsResult{
+      .ok = true,
+      .next_read = (uint64_t *)&source[i],
+      .encoded_value = out,
+  };
+}
+
 
 } // namespace simple8b_internal
 
@@ -211,7 +332,7 @@ ComputeSimple8bEncodeSize(SourceT *source, size_t source_size) {
       simple8b_internal::Simple8bBitPacking packing =
           simple8b_internal::GetBitPacking(i);
       simple8b_internal::EncodeWordsResult result =
-          simple8b_internal::EncodeWords(read, packing, (read_end - read));
+          simple8b_internal::EncodeWords_SIMD(read, packing, (read_end - read));
       if (!result.ok) {
         // Try the next packing.
         continue;
