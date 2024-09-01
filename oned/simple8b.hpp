@@ -164,36 +164,66 @@ EncodeWordsResult EncodeWords(SourceT *source, Simple8bBitPacking packing,
       .encoded_value = out,
   };
 }
-template <std::unsigned_integral SourceT>//bitwidth = 20, .count = 3}
-EncodeWordsResult EncodeWords_SIMD(SourceT *source, Simple8bBitPacking packing,
-                                   size_t max_count) {
+template <std::unsigned_integral SourceT>
+EncodeWordsResult EncodeWords_SIMD(SourceT *source, Simple8bBitPacking packing, size_t max_count) {
   constexpr size_t simd_width = 16;
   const __m256i shift_amounts = _mm256_set_epi64x(
       packing.bitwidth * 3, packing.bitwidth * 2, packing.bitwidth * 1, 0);
+  const __m256i shift_amounts_1 = _mm256_set_epi64x(
+      packing.bitwidth * 7, packing.bitwidth * 6, packing.bitwidth * 5, packing.bitwidth * 4);
+  const __m256i shift_amounts_2 = _mm256_set_epi64x(
+      packing.bitwidth * 11, packing.bitwidth * 10, packing.bitwidth * 9, packing.bitwidth * 8);
+  const __m256i shift_amounts_3 = _mm256_set_epi64x(
+      packing.bitwidth * 15, packing.bitwidth * 14, packing.bitwidth * 13, packing.bitwidth * 12);
 
   uint64_t out = ((uint64_t)packing.selector) << 60;
   size_t i = 0;
 
   for (; i + simd_width <= packing.count; i += simd_width) {
     // Load 16 elements from source
-    __m256i values = _mm256_loadu_si256((__m256i*)(&source + i));
+    __m256i values = _mm256_loadu_si256((__m256i*)(source + i));
+    __m256i values_1 = _mm256_loadu_si256((__m256i*)(source + i + 4));
+    __m256i values_2 = _mm256_loadu_si256((__m256i*)(source + i + 8));
+    __m256i values_3 = _mm256_loadu_si256((__m256i*)(source + i + 12));
 
     // Check if all values fit in bitwidth (if not, bail out)
     __m256i overflow_mask = _mm256_set1_epi16(((uint16_t)1 << packing.bitwidth) - 1);
-    if (_mm256_movemask_epi8(_mm256_cmpgt_epi16(values, overflow_mask)) != 0) {
+    if (_mm256_movemask_epi8(_mm256_cmpgt_epi16(values, overflow_mask)) != 0 ||
+        _mm256_movemask_epi8(_mm256_cmpgt_epi16(values_1, overflow_mask)) != 0 ||
+        _mm256_movemask_epi8(_mm256_cmpgt_epi16(values_2, overflow_mask)) != 0 ||
+        _mm256_movemask_epi8(_mm256_cmpgt_epi16(values_3, overflow_mask)) != 0) {
       return EncodeWordsResult{.ok = false};
     }
 
-    // Generate the shifts for each element
-    __m256i shifts = _mm256_sllv_epi64(values, shift_amounts);
+    // Apply shifts and mask values to fit within the bitwidth
+    __m256i masked_values = _mm256_and_si256(values, overflow_mask);
+    __m256i shifted = _mm256_sllv_epi64(masked_values, shift_amounts);
+        
+    __m256i masked_values_1 = _mm256_and_si256(values_1, overflow_mask);
+    __m256i shifted_1 = _mm256_sllv_epi64(masked_values_1, shift_amounts_1);
 
-    // Horizontally OR the shifted values together
-    uint64_t shifted_values = _mm256_extract_epi64(shifts, 0) | 
-                              _mm256_extract_epi64(shifts, 1) | 
-                              _mm256_extract_epi64(shifts, 2) | 
-                              _mm256_extract_epi64(shifts, 3);
+    __m256i masked_values_2 = _mm256_and_si256(values_2, overflow_mask);
+    __m256i shifted_2 = _mm256_sllv_epi64(masked_values_2, shift_amounts_2);
 
-    out |= shifted_values;
+    __m256i masked_values_3 = _mm256_and_si256(values_3, overflow_mask);
+    __m256i shifted_3 = _mm256_sllv_epi64(masked_values_3, shift_amounts_3);
+
+    // Combine the shifted values using OR
+    __m256i combined_low = _mm256_or_si256(shifted, shifted_1);
+    __m256i combined_high = _mm256_or_si256(shifted_2, shifted_3);
+    __m256i final_combined = _mm256_or_si256(combined_low, combined_high);
+
+    // Manually accumulate the final combined values into the output
+    __m128i lower_half = _mm256_extracti128_si256(final_combined, 0);
+    __m128i upper_half = _mm256_extracti128_si256(final_combined, 1);
+
+    uint64_t lower_half_64[2];
+    uint64_t upper_half_64[2];
+
+    _mm_storeu_si128((__m128i*)lower_half_64, lower_half);
+    _mm_storeu_si128((__m128i*)upper_half_64, upper_half);
+
+    out |= lower_half_64[0] | lower_half_64[1] | upper_half_64[0] | upper_half_64[1];
   }
 
   // Process remaining elements if any
@@ -213,6 +243,7 @@ EncodeWordsResult EncodeWords_SIMD(SourceT *source, Simple8bBitPacking packing,
       .encoded_value = out,
   };
 }
+
 
 
 template <std::signed_integral SourceT>
@@ -365,7 +396,7 @@ template <std::integral SourceT>
       simple8b_internal::Simple8bBitPacking packing =
           simple8b_internal::GetBitPacking(i);
       simple8b_internal::EncodeWordsResult result =
-          simple8b_internal::EncodeWords(read, packing, (read_end - read));
+          simple8b_internal::EncodeWords_SIMD(read, packing, (read_end - read));
       if (!result.ok) {
         // Try the next packing.
         continue;
