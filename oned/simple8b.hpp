@@ -164,10 +164,10 @@ EncodeWordsResult EncodeWords(SourceT *source, Simple8bBitPacking packing,
       .encoded_value = out,
   };
 }
-template <std::unsigned_integral SourceT>
+template <std::unsigned_integral SourceT>//bitwidth = 20, .count = 3}
 EncodeWordsResult EncodeWords_SIMD(SourceT *source, Simple8bBitPacking packing,
                                    size_t max_count) {
-  constexpr size_t simd_width = 16; // AVX2 processes 16 uint16_t elements at once
+  constexpr size_t simd_width = 16;
   const __m256i shift_amounts = _mm256_set_epi64x(
       packing.bitwidth * 3, packing.bitwidth * 2, packing.bitwidth * 1, 0);
 
@@ -248,7 +248,7 @@ EncodeWordsResult EncodeWords(SourceT *source, Simple8bBitPacking packing,
 template <std::signed_integral SourceT>
 EncodeWordsResult EncodeWords_SIMD(SourceT *source, Simple8bBitPacking packing,
                                    size_t max_count) {
-  constexpr size_t simd_width = 16; // AVX2 processes 16 int16_t elements at once
+  constexpr size_t simd_width = 16;
   const __m256i shift_amounts = _mm256_set_epi64x(
       packing.bitwidth * 3, packing.bitwidth * 2, packing.bitwidth * 1, 0);
 
@@ -256,10 +256,8 @@ EncodeWordsResult EncodeWords_SIMD(SourceT *source, Simple8bBitPacking packing,
   size_t i = 0;
 
   for (; i + simd_width <= packing.count; i += simd_width) {
-    // Load 16 elements from source
     __m256i values = _mm256_loadu_si256((__m256i*)(&source + i));
 
-    // Handle the case where bitwidth is 0 (all values must be zero)
     if (packing.bitwidth == 0) {
       if (_mm256_movemask_epi8(_mm256_cmpeq_epi16(values, _mm256_setzero_si256())) != 0xFFFF) {
         return EncodeWordsResult{.ok = false};
@@ -332,7 +330,7 @@ ComputeSimple8bEncodeSize(SourceT *source, size_t source_size) {
       simple8b_internal::Simple8bBitPacking packing =
           simple8b_internal::GetBitPacking(i);
       simple8b_internal::EncodeWordsResult result =
-          simple8b_internal::EncodeWords_SIMD(read, packing, (read_end - read));
+          simple8b_internal::EncodeWords(read, packing, (read_end - read));
       if (!result.ok) {
         // Try the next packing.
         continue;
