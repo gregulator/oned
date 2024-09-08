@@ -133,6 +133,23 @@ static inline Simple8bBitPacking GetBitPacking(uint8_t selector) {
   };
   return bit_packings[selector];
 }
+static const __m256i precomputed_shift_amounts[16][4] = {
+    {_mm256_setzero_si256(), _mm256_setzero_si256(), _mm256_setzero_si256(), _mm256_setzero_si256()},
+    {_mm256_set_epi64x(3, 2, 1, 0), _mm256_set_epi64x(7, 6, 5, 4), _mm256_set_epi64x(11, 10, 9, 8), _mm256_set_epi64x(15, 14, 13, 12)},
+    {_mm256_set_epi64x(6, 4, 2, 0), _mm256_set_epi64x(14, 12, 10, 8), _mm256_set_epi64x(22, 20, 18, 16), _mm256_set_epi64x(30, 28, 26, 24)},
+    {_mm256_set_epi64x(9, 6, 3, 0), _mm256_set_epi64x(21, 18, 15, 12), _mm256_set_epi64x(33, 30, 27, 24), _mm256_set_epi64x(45, 42, 39, 36)},
+    {_mm256_set_epi64x(12, 9, 6, 3), _mm256_set_epi64x(28, 25, 22, 19), _mm256_set_epi64x(44, 41, 38, 35), _mm256_set_epi64x(60, 57, 54, 51)},
+    {_mm256_set_epi64x(15, 12, 9, 6), _mm256_set_epi64x(35, 32, 29, 26), _mm256_set_epi64x(55, 52, 49, 46), _mm256_set_epi64x(75, 72, 69, 66)},
+    {_mm256_set_epi64x(18, 15, 12, 9), _mm256_set_epi64x(42, 39, 36, 33), _mm256_set_epi64x(66, 63, 60, 57), _mm256_set_epi64x(90, 87, 84, 81)},
+    {_mm256_set_epi64x(21, 18, 15, 12), _mm256_set_epi64x(49, 46, 43, 40), _mm256_set_epi64x(77, 74, 71, 68), _mm256_set_epi64x(105, 102, 99, 96)},
+    {_mm256_set_epi64x(24, 21, 18, 15), _mm256_set_epi64x(56, 53, 50, 47), _mm256_set_epi64x(88, 85, 82, 79), _mm256_set_epi64x(120, 117, 114, 111)},
+    {_mm256_set_epi64x(27, 24, 21, 18), _mm256_set_epi64x(63, 60, 57, 54), _mm256_set_epi64x(99, 96, 93, 90), _mm256_set_epi64x(135, 132, 129, 126)},
+    {_mm256_set_epi64x(30, 27, 24, 21), _mm256_set_epi64x(70, 67, 64, 61), _mm256_set_epi64x(110, 107, 104, 101), _mm256_set_epi64x(150, 147, 144, 141)},
+    {_mm256_set_epi64x(36, 30, 24, 18), _mm256_set_epi64x(84, 78, 72, 66), _mm256_set_epi64x(132, 126, 120, 114), _mm256_set_epi64x(180, 174, 168, 162)},
+    {_mm256_set_epi64x(45, 36, 27, 18), _mm256_set_epi64x(105, 96, 87, 78), _mm256_set_epi64x(165, 156, 147, 138), _mm256_set_epi64x(225, 216, 207, 198)},
+    {_mm256_set_epi64x(60, 45, 30, 15), _mm256_set_epi64x(140, 125, 110, 95), _mm256_set_epi64x(220, 205, 190, 175), _mm256_set_epi64x(300, 285, 270, 255)},
+    {_mm256_set_epi64x(90, 60, 30, 0), _mm256_set_epi64x(210, 180, 150, 120), _mm256_set_epi64x(330, 300, 270, 240), _mm256_set_epi64x(450, 420, 390, 360)},
+    {_mm256_set_epi64x(180, 120, 60, 0), _mm256_setzero_si256(), _mm256_setzero_si256(), _mm256_setzero_si256()}};
 
 inline constexpr uint8_t kMaxSelector = 15;
 
@@ -167,13 +184,7 @@ EncodeWordsResult EncodeWords(SourceT *source, Simple8bBitPacking packing,
 template <std::unsigned_integral SourceT>
 EncodeWordsResult EncodeWords_SIMD(SourceT *source, Simple8bBitPacking packing, size_t max_count) {
   constexpr size_t simd_width = 16;
-    // Define shift amounts for each set of 4 elements
-    const __m256i shift_amounts[4] = {
-        _mm256_set_epi64x(packing.bitwidth * 3, packing.bitwidth * 2, packing.bitwidth * 1, 0),
-        _mm256_set_epi64x(packing.bitwidth * 7, packing.bitwidth * 6, packing.bitwidth * 5, packing.bitwidth * 4),
-        _mm256_set_epi64x(packing.bitwidth * 11, packing.bitwidth * 10, packing.bitwidth * 9, packing.bitwidth * 8),
-        _mm256_set_epi64x(packing.bitwidth * 15, packing.bitwidth * 14, packing.bitwidth * 13, packing.bitwidth * 12)
-    };
+    // Define shift amounts for each set of 4 elements  
 
     uint64_t out = ((uint64_t)packing.selector) << 60;
     size_t i = 0;
@@ -197,7 +208,7 @@ EncodeWordsResult EncodeWords_SIMD(SourceT *source, Simple8bBitPacking packing, 
         __m256i combined = _mm256_setzero_si256();
         for (int j = 0; j < 4; ++j) {
             __m256i masked_values = _mm256_and_si256(values[j], overflow_mask);
-            __m256i shifted = _mm256_sllv_epi64(masked_values, shift_amounts[j]);
+            __m256i shifted = _mm256_sllv_epi64(masked_values, precomputed_shift_amounts[packing.bitwidth][j]);
             combined = _mm256_or_si256(combined, shifted);
         }
 
@@ -265,13 +276,6 @@ EncodeWordsResult EncodeWords_SIMD(SourceT *source, Simple8bBitPacking packing, 
 {
   constexpr size_t simd_width = 16;
 
-  // Define shift amounts for each set of 4 elements
-  const __m256i shift_amounts[4] = {
-      _mm256_set_epi64x(packing.bitwidth * 3, packing.bitwidth * 2, packing.bitwidth * 1, 0),
-      _mm256_set_epi64x(packing.bitwidth * 7, packing.bitwidth * 6, packing.bitwidth * 5, packing.bitwidth * 4),
-      _mm256_set_epi64x(packing.bitwidth * 11, packing.bitwidth * 10, packing.bitwidth * 9, packing.bitwidth * 8),
-      _mm256_set_epi64x(packing.bitwidth * 15, packing.bitwidth * 14, packing.bitwidth * 13, packing.bitwidth * 12)};
-
   uint64_t out = ((uint64_t)packing.selector) << 60;
   size_t i = 0;
 
@@ -308,7 +312,7 @@ EncodeWordsResult EncodeWords_SIMD(SourceT *source, Simple8bBitPacking packing, 
 
       // Mask and shift each value appropriately
       __m256i masked_values = _mm256_and_si256(values[j], overflow_mask);
-      shifted_values[j] = _mm256_sllv_epi64(masked_values, shift_amounts[j]);
+      shifted_values[j] = _mm256_sllv_epi64(masked_values, precomputed_shift_amounts[packing.bitwidth][j]);
     }
 
     // Extract and combine results from each set of shifted values
@@ -372,7 +376,7 @@ ComputeSimple8bEncodeSize(SourceT *source, size_t source_size) {
       simple8b_internal::Simple8bBitPacking packing =
           simple8b_internal::GetBitPacking(i);
       simple8b_internal::EncodeWordsResult result =
-          simple8b_internal::EncodeWords_SIMD(read, packing, (read_end - read));
+          simple8b_internal::EncodeWords(read, packing, (read_end - read));
       if (!result.ok) {
         // Try the next packing.
         continue;
@@ -407,6 +411,76 @@ template <std::integral SourceT>
       simple8b_internal::Simple8bBitPacking packing =
           simple8b_internal::GetBitPacking(i);
       simple8b_internal::EncodeWordsResult result =
+          simple8b_internal::EncodeWords(read, packing, (read_end - read));
+      if (!result.ok) {
+        // Try the next packing.
+        continue;
+      }
+      read = (SourceT *)result.next_read;
+      *write = result.encoded_value;
+      write++;
+      break;
+    }
+    if (i > simple8b_internal::kMaxSelector) {
+      // No possible selector found.
+      return Simple8bStatus::kValueOutOfRange;
+    }
+  }
+  return Simple8bStatus::kOk;
+}
+
+
+//SIMD optimized version for encode
+
+//SIMD
+template <std::integral SourceT>
+[[nodiscard]] std::optional<size_t>
+ComputeSimple8bEncodeSize_SIMD(SourceT *source, size_t source_size) {
+  SourceT *read = source;
+  SourceT *read_end = &source[source_size];
+  size_t dest_size = 0;
+  while (read < read_end) {
+    // Try possible encodings, starting with most compact.
+    uint8_t i;
+    for (i = 0; i <= simple8b_internal::kMaxSelector; i++) {
+      simple8b_internal::Simple8bBitPacking packing =
+          simple8b_internal::GetBitPacking(i);
+      simple8b_internal::EncodeWordsResult result =
+          simple8b_internal::EncodeWords_SIMD(read, packing, (read_end - read));
+      if (!result.ok) {
+        // Try the next packing.
+        continue;
+      }
+      read = (SourceT *)result.next_read;
+      dest_size++;
+      break;
+    }
+    if (i > simple8b_internal::kMaxSelector) {
+      // No possible selector found.
+      return std::nullopt;
+    }
+  }
+  return dest_size;
+}
+
+template <std::integral SourceT>
+[[nodiscard]] Simple8bStatus Simple8bEncode_SIMD(SourceT *source, size_t source_size,
+                                            uint64_t *dest, size_t dest_size) {
+  SourceT *read = source;
+  SourceT *read_end = &source[source_size];
+  uint64_t *write = dest;
+  uint64_t *write_end = &dest[dest_size];
+  while (read < read_end) {
+    if (write >= write_end) {
+      // Hit end of destination before reading finished.
+      return Simple8bStatus::kInsufficientSpace;
+    }
+    // Try possible encodings, starting with most compact.
+    uint8_t i;
+    for (i = 0; i <= simple8b_internal::kMaxSelector; i++) {
+      simple8b_internal::Simple8bBitPacking packing =
+          simple8b_internal::GetBitPacking(i);
+      simple8b_internal::EncodeWordsResult result =
           simple8b_internal::EncodeWords_SIMD(read, packing, (read_end - read));
       if (!result.ok) {
         // Try the next packing.
@@ -424,6 +498,7 @@ template <std::integral SourceT>
   }
   return Simple8bStatus::kOk;
 }
+
 
 [[nodiscard]] static inline size_t
 ComputeSimple8bDecodeSize(uint64_t *source, size_t source_size) {
