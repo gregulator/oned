@@ -540,6 +540,79 @@ template <std::unsigned_integral DestT>
   return Simple8bStatus::kOk;
 }
 
+template <std::unsigned_integral DestT>
+[[nodiscard]] Simple8bStatus Simple8bDecode_SIMD(uint64_t *source,
+                                                 size_t source_size, DestT *dest,
+                                                 size_t dest_size) {
+  uint64_t *read = source;
+  uint64_t *read_end = &source[source_size];
+  DestT *write = dest;
+  DestT *write_end = &dest[dest_size];
+
+  constexpr size_t simd_width = 16; // Process 4 values at once (64 bits * 4 = 256 bits)
+  
+  while (read < read_end) {
+    uint8_t selector = uint8_t(*read >> 60);  // Get selector from the most significant bits
+    simple8b_internal::Simple8bBitPacking packing = simple8b_internal::GetBitPacking(selector);
+    
+    const __m256i shift_amounts = _mm256_set_epi64x(
+        packing.bitwidth * 3, packing.bitwidth * 2, packing.bitwidth * 1, 0);
+    const __m256i shift_amounts_1 = _mm256_set_epi64x(
+        packing.bitwidth * 7, packing.bitwidth * 6, packing.bitwidth * 5, packing.bitwidth * 4);
+    const __m256i shift_amounts_2 = _mm256_set_epi64x(
+        packing.bitwidth * 11, packing.bitwidth * 10, packing.bitwidth * 9, packing.bitwidth * 8);
+    const __m256i shift_amounts_3 = _mm256_set_epi64x(
+        packing.bitwidth * 15, packing.bitwidth * 14, packing.bitwidth * 13, packing.bitwidth * 12);
+        
+    // SIMD-friendly processing: handle values in groups of 4
+    size_t i = 0;
+    for (; i + simd_width <= packing.count; i += simd_width) {
+      if (write + simd_width > write_end) {
+        return Simple8bStatus::kInsufficientSpace;
+      }
+
+      // Load the 64-bit encoded value into a 256-bit register (simulated as four 64-bit lanes)
+      __m256i encoded_value = _mm256_set1_epi64x(*read);
+
+      // Shift the encoded value to extract the packed elements
+      
+      __m256i shifted_values = _mm256_srlv_epi64(encoded_value, shift_amounts);
+      __m256i shifted_values1 = _mm256_srlv_epi64(encoded_value, shift_amounts_1);
+      __m256i shifted_values2 = _mm256_srlv_epi64(encoded_value, shift_amounts_2);
+      __m256i shifted_values3 = _mm256_srlv_epi64(encoded_value, shift_amounts_3);
+      // Mask out the irrelevant bits
+      __m256i bitmask = _mm256_set1_epi64x((1ULL << packing.bitwidth) - 1);
+      __m256i decoded_values = _mm256_and_si256(shifted_values, bitmask);
+      __m256i decoded_values1 = _mm256_and_si256(shifted_values1, bitmask);
+      __m256i decoded_values2 = _mm256_and_si256(shifted_values2, bitmask);
+      __m256i decoded_values3 = _mm256_and_si256(shifted_values3, bitmask);
+      // Store the decoded values to the destination
+      _mm256_storeu_si256(reinterpret_cast<__m256i *>(write + 0), decoded_values);
+      _mm256_storeu_si256(reinterpret_cast<__m256i *>(write + 4), decoded_values1);
+      _mm256_storeu_si256(reinterpret_cast<__m256i *>(write + 8), decoded_values2);
+      _mm256_storeu_si256(reinterpret_cast<__m256i *>(write + 12), decoded_values3);
+
+
+      // Move the write pointer ahead by 4 (since we processed 4 values)
+      write += simd_width;
+    }
+
+    // Handle the remaining values (if fewer than 4 values are left)
+    for (; i < packing.count; i++) {
+      if (write >= write_end) {
+        return Simple8bStatus::kInsufficientSpace;
+      }
+      *write = (DestT)((*read >> (packing.bitwidth * i)) & ((1ULL << packing.bitwidth) - 1));
+      write++;
+    }
+
+    read++;
+  }
+
+  return Simple8bStatus::kOk;
+}
+
+
 template <std::signed_integral DestT>
 [[nodiscard]] Simple8bStatus Simple8bDecode(uint64_t *source,
                                             size_t source_size, DestT *dest,
@@ -571,6 +644,101 @@ template <std::signed_integral DestT>
     read++;
   }
   return Simple8bStatus::kOk;
+}
+
+template <std::signed_integral DestT>
+[[nodiscard]] Simple8bStatus Simple8bDecode_SIMD(uint64_t *source,
+                                                 size_t source_size, DestT *dest,
+                                                 size_t dest_size) {
+    uint64_t *read = source;
+    uint64_t *read_end = &source[source_size];
+    DestT *write = dest;
+    DestT *write_end = &dest[dest_size];
+
+    constexpr size_t simd_width = 16; // Process 4 values at once (64 bits * 4 = 256 bits)
+
+    while (read < read_end) {
+        uint8_t selector = uint8_t(*read >> 60);
+        simple8b_internal::Simple8bBitPacking packing = simple8b_internal::GetBitPacking(selector);
+
+        // Load encoded data into a SIMD register
+        const __m256i shift_amounts = _mm256_set_epi64x(
+            packing.bitwidth * 3, packing.bitwidth * 2, packing.bitwidth * 1, 0);
+        const __m256i shift_amounts_1 = _mm256_set_epi64x(
+            packing.bitwidth * 7, packing.bitwidth * 6, packing.bitwidth * 5, packing.bitwidth * 4);
+        const __m256i shift_amounts_2 = _mm256_set_epi64x(
+            packing.bitwidth * 11, packing.bitwidth * 10, packing.bitwidth * 9, packing.bitwidth * 8);
+        const __m256i shift_amounts_3 = _mm256_set_epi64x(
+            packing.bitwidth * 15, packing.bitwidth * 14, packing.bitwidth * 13, packing.bitwidth * 12);
+
+
+        __m256i encoded_value = _mm256_set1_epi64x(*read);
+
+        size_t i = 0;
+        for (; i + simd_width <= packing.count; i += simd_width) {
+            if (write + simd_width > write_end) {
+                return Simple8bStatus::kInsufficientSpace;
+            }
+
+            // Calculate shift amounts for extracting the values
+
+            // Extract values from the encoded data
+            __m256i shifted_values = _mm256_srlv_epi64(encoded_value, shift_amounts);
+            __m256i shifted_values_1 = _mm256_srlv_epi64(encoded_value, shift_amounts_1);
+            __m256i shifted_values_2 = _mm256_srlv_epi64(encoded_value, shift_amounts_2);
+            __m256i shifted_values_3 = _mm256_srlv_epi64(encoded_value, shift_amounts_3);
+
+            
+            __m256i bitmask = _mm256_set1_epi64x((1ULL << packing.bitwidth) - 1);
+
+            // Apply the bitmask to extract only the valid bits
+            __m256i decoded_values = _mm256_and_si256(shifted_values, bitmask);
+            __m256i decoded_values_1 = _mm256_and_si256(shifted_values_1, bitmask);
+            __m256i decoded_values_2 = _mm256_and_si256(shifted_values_2, bitmask);
+            __m256i decoded_values_3 = _mm256_and_si256(shifted_values_3, bitmask);
+            
+            //__m256i extracted_values = _mm256_and_si256(shifted_values, bitmask);
+
+            // Create a mask for signed values
+            __m256i sign_bit_mask = _mm256_set1_epi64x(1ULL << (packing.bitwidth - 1));
+            decoded_values = _mm256_sub_epi64(_mm256_xor_si256(decoded_values, sign_bit_mask), sign_bit_mask);
+            decoded_values_1 = _mm256_sub_epi64(_mm256_xor_si256(decoded_values_1, sign_bit_mask), sign_bit_mask);
+            decoded_values_2 = _mm256_sub_epi64(_mm256_xor_si256(decoded_values_2, sign_bit_mask), sign_bit_mask);
+            decoded_values_3 = _mm256_sub_epi64(_mm256_xor_si256(decoded_values_3, sign_bit_mask), sign_bit_mask);
+
+
+            //__m256i sign_mask = _mm256_set1_epi64x(1ULL << (packing.bitwidth - 1));
+            //__m256i is_negative = _mm256_cmpgt_epi64(extracted_values, sign_mask);
+
+            // Sign extend the values
+           _mm256_storeu_si256(reinterpret_cast<__m256i *>(write + 0), decoded_values);
+            _mm256_storeu_si256(reinterpret_cast<__m256i *>(write + 4), decoded_values_1);
+            _mm256_storeu_si256(reinterpret_cast<__m256i *>(write + 8), decoded_values_2);
+            _mm256_storeu_si256(reinterpret_cast<__m256i *>(write + 12), decoded_values_3);
+
+            // Move the write pointer forward by simd_width (16 elements)
+            write += simd_width;
+        }
+
+        // Process any remaining values
+        for (; i < packing.count; i++) {
+            if (write >= write_end) {
+              return Simple8bStatus::kInsufficientSpace;
+            }
+            if (*read && (*read >> (packing.bitwidth * (i + 1) - 1) & 0x1)) {
+              // negative
+              *write = (DestT)((*read >> (packing.bitwidth * i)) |(0xFFFFFFFFFFFFFFFF ^((((uint64_t)1) << packing.bitwidth) - 1)));
+            } else {
+              // positive
+              *write = (DestT)((*read >> (packing.bitwidth * i)) &((((uint64_t)1) << packing.bitwidth) - 1));
+            }
+            write++;
+        }
+
+        read++;
+    }
+
+    return Simple8bStatus::kOk;
 }
 
 } // namespace oned

@@ -21,7 +21,9 @@ TEST(Simple8bTest, BasicUnsignedEncodingDecoding) {
 }
 
 TEST(Simple8bTest, BasicSignedEncodingDecoding) {
-    std::vector<int64_t> signed_data = {-2, -1, 0, 1, 2, 3, 4, 5};
+    std::vector<int64_t> signed_data = {-2 ,-2, 2, 0, 1, -1, -2, 2, 2, 3, 0, 1, 2, -2, -2, 1, 2, -2, 0, -2, 0, 2, 1, 3, 3, 1, -2, 1, 0, 2, 3, 2, -1, -2, 2, -1,
+     1, 2, 3, 0, -1, 3, 2, 2, 1, -2, 1, 3, -1, 0, 2, 0, -1, -1, 0, -2, 0, 3, 3, -2, 3, 1, 1, -1, 3, 0, -1, -2, 3, -2, 1, 0, -1, 3, 1, 0, 3, -2,
+      2, 2, 2, -2, -2, 2, 3, 1, 2, 2, 3, 3, -1, -1, 0, 1, 1, 3, 0, 3, -1, 0};
     auto signed_encoded_size_opt = oned::ComputeSimple8bEncodeSize(signed_data.data(), signed_data.size());
     ASSERT_TRUE(signed_encoded_size_opt.has_value()) << "Failed to compute encoding size for signed data.";
     
@@ -30,10 +32,11 @@ TEST(Simple8bTest, BasicSignedEncodingDecoding) {
     
     oned::Simple8bStatus signed_encode_status = oned::Simple8bEncode(signed_data.data(), signed_data.size(), signed_encoded.data(), signed_encoded.size());
     EXPECT_EQ(signed_encode_status, oned::Simple8bStatus::kOk) << "Encoding signed data failed.";
-    
+
     std::vector<int64_t> signed_decoded(oned::ComputeSimple8bDecodeSize(signed_encoded.data(), signed_encoded.size()));
     oned::Simple8bStatus signed_decode_status = oned::Simple8bDecode(signed_encoded.data(), signed_encoded.size(), signed_decoded.data(), signed_decoded.size());
     EXPECT_EQ(signed_decode_status, oned::Simple8bStatus::kOk) << "Decoding signed data failed.";
+
     EXPECT_EQ(signed_decoded, signed_data) << "Decoded signed data does not match original.";
 }
 
@@ -84,7 +87,7 @@ TEST(Simple8bTest, LargeDataConsistency) {
     EXPECT_EQ(simd_encode_status, oned::Simple8bStatus::kOk) << "Encoding with SIMD failed.";
     
     std::vector<uint64_t> simd_decoded(oned::ComputeSimple8bDecodeSize(simd_encoded.data(), simd_encoded.size()));
-    oned::Simple8bStatus simd_decode_status = oned::Simple8bDecode(simd_encoded.data(), simd_encoded.size(), simd_decoded.data(), simd_decoded.size());
+    oned::Simple8bStatus simd_decode_status = oned::Simple8bDecode_SIMD(simd_encoded.data(), simd_encoded.size(), simd_decoded.data(), simd_decoded.size());
     EXPECT_EQ(simd_decode_status, oned::Simple8bStatus::kOk) << "Decoding with SIMD failed.";
     EXPECT_EQ(simd_decoded, data) << "Decoded data with SIMD does not match original.";
 }
