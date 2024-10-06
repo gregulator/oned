@@ -34,3 +34,6 @@
 # Bazel generated files
 bazel-*
 MODULE.bazel.lock
+
+#vscode settings
+.vscode

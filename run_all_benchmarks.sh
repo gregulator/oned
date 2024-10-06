@@ -11,13 +11,14 @@ benchmarks=(
 output_file="BENCHMARK.md"
 
 if [ -f "$output_file" ]; then
+    echo "Delete current file"
     rm "$output_file"
 fi
 
 # Run each benchmark
 for bench in "${benchmarks[@]}"; do
-    echo  "Running $bench..." >> BENCHMARK.mb
-    bazel run --compilation_mode=opt oned/bench:$bench >> BENCHMARK.mb
-    echo "$bench completed. " >> BENCHMARK.mb
-    echo '===========================================================================================================================' >> BENCHMARK.mb
+    echo  "Running $bench..." >> BENCHMARK.md
+    bazel run --compilation_mode=opt oned/bench:$bench >> BENCHMARK.md
+    echo "$bench completed. " >> BENCHMARK.md
+    echo '===========================================================================================================================' >> BENCHMARK.md
 done

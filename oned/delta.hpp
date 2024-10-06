@@ -6,6 +6,7 @@
 #include <ranges>
 #include <string>
 #include <vector>
+#include <immintrin.h>
 // This file defines functions for delta-encoding (and delta-decoding) of
 // integer sequences:
 //
@@ -73,6 +74,7 @@ enum class DeltaResult {
 //
 // Returns DeltaResult::kOk on success.
 // Returns DeltaResult::kSizeMismatch if `source` and `dest` differ in size.
+// DeltaEncodeSIMD() is SIMD optimize version of DeltaEncode()
 template <typename SourceR, typename DestR>
   requires DeltaEncodable<SourceR, DestR>
 DeltaResult DeltaEncode(SourceR &&source, DestR &&dest);
@@ -86,6 +88,7 @@ DeltaResult DeltaEncode(SourceR &&source, DestR &&dest);
 //
 // Returns DeltaResult::kOk on success.
 // Returns DeltaResult::kSizeMismatch if `source` and `dest` differ in size.
+// DeltaDecodeSIMD() is SIMD optimize version of DeltaDecode()
 template <typename SourceR, typename DestR>
   requires DeltaEncodable<SourceR, DestR>
 DeltaResult DeltaDecode(SourceR &&source, DestR &&dest);
@@ -114,6 +117,43 @@ DeltaResult DeltaEncode(SourceR &&source, DestR &&dest) {
 
 template <typename SourceR, typename DestR>
   requires DeltaEncodable<SourceR, DestR>
+DeltaResult DeltaEncodeSIMD(SourceR &&source, DestR &&dest) {
+  if (std::ranges::size(source) != std::ranges::size(dest)) {
+    return DeltaResult::kSizeMismatch;
+  }
+  const size_t size = std::ranges::size(source);
+  const size_t simd_width = 8;
+  size_t i = 0;
+
+  dest[i] = source[i];
+  int prev = source[i];
+  i++;
+
+  for (; i + simd_width <= size; i += simd_width) {
+    auto old = source[i+simd_width - 1];
+    __m256i src_chunk = _mm256_loadu_si256((__m256i*)&source[i]);
+    __m256i prev_vec = _mm256_set_epi32(
+        source[i + 6], source[i + 5], source[i + 4], source[i + 3], 
+        source[i + 2], source[i + 1], source[i], prev
+    );
+    __m256i result = _mm256_sub_epi32(src_chunk, prev_vec);
+    _mm256_storeu_si256((__m256i*)&dest[i], result);
+    prev = old;
+  }
+
+  // Scalar encoding for the remaining elements
+  for (; i < size; ++i) {
+    auto old = source[i]; // Needed for in-place encoding.
+    dest[i] = source[i] - prev;
+    prev = old;
+  }
+
+  return DeltaResult::kOk;
+}
+
+
+template <typename SourceR, typename DestR>
+  requires DeltaEncodable<SourceR, DestR>
 DeltaResult DeltaDecode(SourceR &&source, DestR &&dest) {
   if (std::ranges::size(source) != std::ranges::size(dest)) {
     return DeltaResult::kSizeMismatch;
@@ -129,6 +169,48 @@ DeltaResult DeltaDecode(SourceR &&source, DestR &&dest) {
     prev = *d;
   } while (s != source.end());
   return DeltaResult::kOk;
+}
+
+template <typename SourceR, typename DestR>
+requires DeltaEncodable<SourceR, DestR>
+DeltaResult DeltaDecodeSIMD(SourceR &&source, DestR &&dest) {
+    if (std::ranges::size(source) != std::ranges::size(dest)) {
+        return DeltaResult::kSizeMismatch;
+    }
+
+    const size_t size = std::ranges::size(source);
+    const size_t simd_width = 8;  // Width for SIMD operations (256-bit registers)
+    const size_t block_size = 4;  // Block size for accumulation
+
+
+    size_t i = 0;
+    __m256i prefix_sum = _mm256_setzero_si256();
+
+    for (; i + simd_width <= size; i += simd_width) {
+        __m256i src_chunk = _mm256_loadu_si256((__m256i*)&source[i]);
+        __m256i prefix = _mm256_add_epi32(src_chunk, _mm256_slli_si256(src_chunk, 4));
+        prefix = _mm256_add_epi32(prefix, _mm256_slli_si256(prefix, 8));
+        _mm256_storeu_si256((__m256i*)&dest[i], prefix);
+
+    }
+    
+    // The 256-bit version of this instruction performs this byte shift independently within two 128-bit lanes, which is typical to AVX since we need accumulating
+    __m128i s = _mm_setzero_si128(); // Initialize block accumulator for 4-element blocks
+    for (size_t j = 0; j + block_size < size; j += block_size){
+
+        __m128i d = (__m128i) _mm_broadcast_ss((float*) &dest[j + 3]);
+        __m128i x = _mm_load_si128((__m128i*) &dest[j]);
+        x = _mm_add_epi32(s, x);
+        _mm_store_si128((__m128i*) &dest[j], x);
+        s = _mm_add_epi32(s, d);
+        prefix_sum = _mm256_set1_epi32(_mm_cvtsi128_si32(_mm_shuffle_epi32(s, 0xFF)));
+    }
+    // Process remaining elements if size is not a perfect multiple of block_size
+    for (; i < size; ++i) {
+        dest[i] = source[i] + _mm256_extract_epi32(prefix_sum, 0);
+        prefix_sum = _mm256_set1_epi32(dest[i]);
+    }
+    return DeltaResult::kOk;
 }
 
 static_assert(DeltaEncodable<std::vector<int>, std::vector<double>>);
