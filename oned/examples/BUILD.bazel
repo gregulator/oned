@@ -71,3 +71,19 @@ cc_binary(
         "//oned:xor",
     ]
 )
+
+
+
+cc_binary(
+    name = "config_reader_example",
+    srcs = ["config_reader_example.cc"],
+    copts = ["--std=c++20"],
+    deps = [
+        "//oned:config_reader",
+        "@tinyxml2//:tinyxml2",
+        "@nlohmann_json//:json"
+    ],
+    data = [
+        "//oned/configs:config",     # Reference to the config file group
+    ],
+)

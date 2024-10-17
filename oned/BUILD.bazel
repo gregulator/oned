@@ -50,3 +50,16 @@ cc_library(
     copts = ["--std=c++20"],
     visibility = ["//visibility:public"],
 )
+
+cc_library(
+    name = "config_reader",
+    hdrs = ["config_reader.hpp"],
+    deps = [
+        "@tinyxml2//:tinyxml2",
+        "@nlohmann_json//:json",
+        ":data_container"
+    ],
+    copts = ["--std=c++20"],
+    visibility = ["//visibility:public"],
+)
+

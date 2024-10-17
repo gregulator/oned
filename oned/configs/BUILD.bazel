@@ -1,0 +1,5 @@
+filegroup(
+    name = "config",
+    srcs = ["jsonConfig.xml"],
+    visibility = ["//visibility:public"],  # Make it accessible by other targets
+)

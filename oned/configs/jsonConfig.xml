@@ -1,0 +1,24 @@
+<Protocol Name="JSON">
+    <Field Name="name" Type="string"/>
+    <Field Name="age" Type="integer"/>
+    <Field Name="address" Type="object">
+        <SubField Name="street" Type="string"/>
+        <SubField Name="city" Type="string"/>
+        <SubField Name="zipcode" Type="integer"/>
+    </Field>
+    <Field Name="emails" Type="array">
+        <ArrayField Name="email" Type="string"/>
+    </Field>
+</Protocol>
+<Protocol Name="JSON2">
+    <Field Name="name2" Type="string"/>
+    <Field Name="age2" Type="integer"/>
+    <Field Name="address2" Type="object">
+        <SubField Name="street" Type="string"/>
+        <SubField Name="city" Type="string"/>
+        <SubField Name="zipcode" Type="integer"/>
+    </Field>
+    <Field Name="emails" Type="array">
+        <ArrayField Name="email" Type="string"/>
+    </Field>
+</Protocol>
