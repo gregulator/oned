@@ -1,13 +1,28 @@
-{
-    "name": "John Doe",
-    "age": 30,
-    "address": {
-        "street": "123 Elm Street",
-        "city": "Springfield",
-        "zipcode": 98765
+[
+    {
+        "name": "John Doe",
+        "age": 30,
+        "address": {
+            "street": "123 Elm Street",
+            "city": "Springfield",
+            "zipcode": 98765
+        },
+        "emails": [
+            "john.doe@example.com",
+            "johndoe.work@example.com"
+        ]
     },
-    "emails": [
-        "john.doe@example.com",
-        "johndoe.work@example.com" 
-    ]
-}
+    {
+        "name": "John Doe1",
+        "age": 30,
+        "address": {
+            "street": "123 Elm Street1",
+            "city": "Springfield1",
+            "zipcode": 98765
+        },
+        "emails": [
+            "john.doe@example1.com",
+            "johndoe.work@example1.com"
+        ]
+    }
+]

@@ -50,80 +50,96 @@ public:
         container = new DataContainer();
 
         // Parse the JSON object based on the protocol
-        ParseObject(json_data, protocol);
+        for (const auto& entry : json_data) {
+            ParseObject(entry, protocol);
+        }
+        
 
         
     }
 
 private:
     void ParseObject(const nlohmann::json& json_obj, const Protocol& protocol) {
+        std::unordered_map<std::string, int> arrayCounts;
+
         for (const auto& field : protocol.fields) {
             if (json_obj.contains(field.name)) {
                 const auto& value = json_obj[field.name];
                 if (field.type == "object") {
                     // Recursively parse subfields of the object
-                    ParseObject(value, field);
+                    ParseNestedObject(value, field.name, field.subFields);
                 } else if (field.isArray) {
                     // Handle array fields
-                    ParseArray(value, field);
+                    ParseArray(value, field, arrayCounts);
                 } else {
                     // Handle regular fields
-                    AddFieldToChannel(field, value);
+                    AddFieldToChannel(field.name, value, field.type);
                 }
             }
         }
     }
-    void ParseObject(const nlohmann::json& json_obj, const Field& field) {
-        if (json_obj.contains(field.name)) {
-            const auto& value = json_obj[field.name];
-            if (field.type == "object") {
-                // Recursively parse subfields of the object
-                ParseObject(value, field);
-            } else if (field.isArray) {
-                // Handle array fields
-                ParseArray(value, field);
+    void ParseNestedObject(const nlohmann::json &json_obj, const std::string &prefix, const std::vector<Field> &subFields) {
+    for (const auto &subField : subFields) {
+        if (json_obj.contains(subField.name)) {
+            const auto &value = json_obj[subField.name];
+            const std::string fullName = prefix + "." + subField.name;
+
+            if (subField.type == "object") {
+                // Recursively parse nested objects
+                ParseNestedObject(value, fullName, subField.subFields);
+            } else if (subField.isArray) {
+                // Handle arrays in nested objects
+                std::unordered_map<std::string, int> nestedArrayCounts;
+                ParseArray(value, subField, nestedArrayCounts);
             } else {
-                // Handle regular fields
-                AddFieldToChannel(field, value);
+                // Add simple fields
+                AddFieldToChannel(fullName, value, subField.type);
             }
         }
-
     }
+}
     
-    void ParseArray(const nlohmann::json& json_array, const Field& field) {
-        for (const auto& item : json_array) {
-            ParseObject(item, field);
+    void ParseArray(const nlohmann::json &json_array, const Field &field, std::unordered_map<std::string, int> &arrayCounts) {
+        const std::string arrayName = field.name + ".array";
+        const std::string arraySupportName = "arraysupport." + field.name;
+
+        int initialCount = arrayCounts[arrayName];
+
+        // Append array elements to the array container
+        for (const auto &item : json_array) {
+            AddFieldToChannel(arrayName, item, field.type);
+            initialCount++;
         }
+
+        // Update arraysupport container with the cumulative count
+        arrayCounts[arrayName] = initialCount;
+        AddFieldToChannel(arraySupportName, initialCount, "integer");
     }
 
-    void AddFieldToChannel(const Field& field, const nlohmann::json& value) {
-        DataContainer::Channel* channel = nullptr;
+    void AddFieldToChannel(const std::string &field_name, const nlohmann::json &value, const std::string &field_type) {
+        DataContainer::Channel *channel = nullptr;
 
-        // Add a channel based on the field type if it doesn't exist
-        if (!container->GetChannel(field.name)) {
-            if (field.type == "double") {
-                channel = container->AddChannel<double>(field.name);
-            } else if (field.type == "int") {
-                channel = container->AddChannel<int>(field.name);
-            } else if (field.type == "string") {
-                channel = container->AddChannel<std::string>(field.name);
+        // Create or retrieve the channel
+        if (!container->GetChannel(field_name)) {
+            if (field_type == "double") {
+                channel = container->AddChannel<double>(field_name);
+            } else if (field_type == "integer") {
+                channel = container->AddChannel<int>(field_name);
+            } else if (field_type == "string") {
+                channel = container->AddChannel<std::string>(field_name);
             }
-            // Add cases for other types if needed
         } else {
-            channel = container->GetChannel(field.name);
+            channel = container->GetChannel(field_name);
         }
 
-        // Add the value to the channel (assuming a single chunk for simplicity)
+        // Add the value to the channel
         if (channel != nullptr) {
-            if (field.type == "double") {
+            if (field_type == "double") {
                 channel->MutableData<double>(-1)->push_back(value.get<double>());
-                //*channel->MutableData<double>(0) = value.get<double>();
-            } else if (field.type == "int") {
+            } else if (field_type == "integer") {
                 channel->MutableData<int>(-1)->push_back(value.get<int>());
-                //*channel->MutableData<int>(0) = std::vector<int>{value.get<int>()};
-            } else if (field.type == "string") {
+            } else if (field_type == "string") {
                 channel->MutableData<std::string>(-1)->push_back(value.get<std::string>());
-                //*channel->MutableData<std::string>(0) =  std::vector<std::string>{value.get<std::string>()};
             }
         }
     }
