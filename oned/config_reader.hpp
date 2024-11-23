@@ -13,6 +13,16 @@
 
 namespace oned
 {
+    
+    struct  ProtocolType
+    {
+        static const std::string JSON;
+        static const std::string ROSbag;
+        static const std::string UNKNOWN; 
+    };
+    const std::string ProtocolType::JSON = "JSON";
+    const std::string ProtocolType::ROSbag = "ROSBAG";
+    const std::string ProtocolType::UNKNOWN = "UNKNOWN";
     struct Field
     {
         std::string name;
