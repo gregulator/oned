@@ -1,7 +1,7 @@
 # OneD - Timeseries Utilities
 
 OneD (pronounced "1-D" as in "one-dimensional") is a work-in-progress C++
-library for working with timeseries data, in development by Greg Prisament.
+library for working with timeseries data, started by Greg Prisament.
 
 The library currently provides:
 
